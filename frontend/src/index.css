@@ -1,0 +1,298 @@
+@import 'tailwindcss';
+
+/* Dark mode is driven by the `.dark` class on <html>, not by the media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Palette tokens. Light values come from docs/design/Main.dc.html; dark values
+   from docs/design/JuegoOscuro.dc.html. Components never use raw hex.
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  /* Where the phone toast stack sits; a screen with bottom furniture (the game
+     keyboard) raises it while it is mounted (see `useToastSafeBottom`). */
+  --toast-bottom: 1rem;
+  /* `viewport-fit=cover` in index.html lets the page paint under the notch, the
+     home indicator and the rounded corners; these keep content out from under
+     them. They go through custom properties rather than inlining `env()` at
+     each call site so a layout can add its own padding on top with `calc()`,
+     and so the whole set can be overridden at once to check the wiring on a
+     screen that has no insets of its own. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --surface-2: #f4f1eb;
+  --ink: #1c1a17;
+  --ink-2: #5c5750;
+  --ink-3: #8f8980;
+  --on-ink: #ffffff;
+  --line: #e6e1d8;
+  --line-dashed: #d9d3c8;
+  --faint: #c9c3b9;
+  --track: #ede9e2;
+  --green: #3fa66b;
+  --green-ink: #2e7a4e;
+  --green-soft: #eef8f1;
+  --yellow: #e5b537;
+  --yellow-ink: #b98a12;
+  --yellow-soft: #fbf3dc;
+  --yellow-line: #f0dda0;
+  --yellow-deep: #7a5a05;
+  --yellow-mid: #a07a10;
+  --red: #b33a2b;
+  --red-soft: #fdecea;
+  --accent: #0e7490;
+  --accent-hover: #155e75;
+  --accent-soft: #ecfeff;
+  --shadow: 0 4px 12px rgba(28, 26, 23, 0.1);
+  --shadow-lg: 0 12px 32px rgba(28, 26, 23, 0.14);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #151412;
+  --surface: #1f1d1a;
+  --surface-2: #2a2723;
+  --ink: #f3efe8;
+  --ink-2: #b5aea3;
+  --ink-3: #8a847b;
+  --on-ink: #151412;
+  --line: #2e2b27;
+  --line-dashed: #3a3631;
+  --faint: #55504a;
+  --track: #2a2723;
+  --green: #3fa66b;
+  --green-ink: #6fd79a;
+  --green-soft: #173222;
+  --yellow: #e5b537;
+  --yellow-ink: #d8b24e;
+  --yellow-soft: #3a2f14;
+  --yellow-line: #5c4a1c;
+  --yellow-deep: #f0c862;
+  --yellow-mid: #d8b24e;
+  --red: #f08a7a;
+  --red-soft: #3a1f1b;
+  --accent: #22d3ee;
+  --accent-hover: #67e8f9;
+  --accent-soft: #14343d;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* Tailwind utilities bound to the tokens above (bg-bg, text-ink, border-line, ...). */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-on-ink: var(--on-ink);
+  --color-line: var(--line);
+  --color-line-dashed: var(--line-dashed);
+  --color-faint: var(--faint);
+  --color-track: var(--track);
+  --color-green: var(--green);
+  --color-green-ink: var(--green-ink);
+  --color-green-soft: var(--green-soft);
+  --color-yellow: var(--yellow);
+  --color-yellow-ink: var(--yellow-ink);
+  --color-yellow-soft: var(--yellow-soft);
+  --color-yellow-line: var(--yellow-line);
+  --color-yellow-deep: var(--yellow-deep);
+  --color-yellow-mid: var(--yellow-mid);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-white: #ffffff;
+  /* Ink for the swatches that are the same colour in both themes — the yellow
+     chip, the drawing palette — where a theme-aware ink would vanish. */
+  --color-on-bright: #1c1a17;
+
+  --font-sans: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+
+  --animate-sticker-flash: sticker-flash 2.5s ease-out both;
+  --animate-emote-pop: emote-pop 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-toast-in: toast-in 220ms ease-out both;
+  --animate-fade-in: fade-in 240ms ease-out both;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  button {
+    font: inherit;
+    color: inherit;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  [role='switch']:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--yellow);
+    color: #1c1a17;
+  }
+}
+
+@layer components {
+  .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* The home doodles. Every path carries `pathLength="1"`, so one dash
+     animation reveals any of them whatever its real length; the duration and
+     the per-stroke delay come from the component, where the timing is data.
+     See `features/lobby/components/Hero.tsx`. */
+  .sketch path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    opacity: 0;
+    animation-name: sketch-draw;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+  }
+}
+
+/* One stroke of a home doodle: drawn over 1.4 s, held, gone by 4.2 s. The
+   percentages are slices of the whole 15 s loop — three doodles of 5 s — since
+   each path's own slot is picked by its `animation-delay`, not by the keyframe. */
+@keyframes sketch-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  0.5% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  9.3% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  25.3% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  28%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* Phone sticker overlay: the sticker pops in over the keyboard, holds for most
+   of its 2.5 s and fades out just as the store drops it. */
+@keyframes sticker-flash {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.7);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.06);
+  }
+  16% {
+    transform: translateY(0) scale(1);
+  }
+  86% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(0.96);
+  }
+}
+
+@keyframes emote-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The sticker keeps the fade so it is still noticed; no scaling, no floating. */
+  .animate-sticker-flash {
+    animation: sticker-flash-quiet 2.5s linear both;
+  }
+  .animate-emote-pop {
+    animation: fade-in 160ms ease-out both;
+  }
+  /* No drawing, no cycling: the first doodle, already finished, stays put. */
+  .sketch path {
+    animation: none;
+  }
+  .sketch .sketch-still {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes sticker-flash-quiet {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

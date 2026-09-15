@@ -1,0 +1,15 @@
+{
+  "note": "Starter bank. See docs/context/04-decisions-and-pending.md -> word banks: this needs a build script and a difficulty grading, both still pending. Words are stored in natural Spanish spelling because the reveal shows them; guesses are normalised before comparing, so `arana` matches `araña`. Every entry must be a concrete noun somebody can draw in under a minute.",
+  "words": [
+    "casa", "árbol", "gato", "perro", "sol", "luna", "estrella", "nube", "lluvia", "nieve",
+    "montaña", "playa", "isla", "río", "puente", "barco", "avión", "coche", "tren", "bicicleta",
+    "moto", "cohete", "globo", "paraguas", "sombrero", "gafas", "reloj", "llave", "puerta", "ventana",
+    "escalera", "silla", "mesa", "cama", "lámpara", "espejo", "libro", "lápiz", "tijeras", "pincel",
+    "guitarra", "piano", "tambor", "teléfono", "cámara", "televisión", "ordenador", "robot", "ancla", "brújula",
+    "manzana", "plátano", "naranja", "fresa", "sandía", "zanahoria", "tomate", "pan", "queso", "huevo",
+    "pizza", "hamburguesa", "helado", "pastel", "café", "taza", "botella", "cuchara", "tenedor", "plato",
+    "pez", "tiburón", "ballena", "pulpo", "cangrejo", "mariposa", "abeja", "araña", "serpiente", "elefante",
+    "jirafa", "león", "oso", "conejo", "ratón", "pájaro", "pingüino", "tortuga", "caballo", "vaca",
+    "flor", "cactus", "hoja", "seta", "fuego", "volcán", "corazón", "fantasma", "corona", "castillo"
+  ]
+}

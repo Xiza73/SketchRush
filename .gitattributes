@@ -1,0 +1,15 @@
+# Line endings are decided here, not by each machine's core.autocrlf. Without
+# this a Windows clone can commit CRLF into files a Linux clone wrote with LF,
+# and the diff becomes the whole file. Everything textual is stored as LF.
+* text=auto eol=lf
+
+# Binary: never touched, never diffed as text.
+*.png binary
+*.webp binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Generated; keep it out of review diffs without ignoring it.
+pnpm-lock.yaml linguist-generated=true

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>SketchRush</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1C1A17" />
+    <meta
+      name="description"
+      content="Draw and guess, up to 10 players, in Spanish and English. You pick your word out of three and draw against the clock; the drawer is paid the room's average, so a turn nobody guesses is worth zero."
+    />
+    <!--
+      No og:image and no og:url until there is a deploy to point them at. The
+      card that used to live here was WordRush's, copied over with everything
+      else: its name, its board and its domain. A missing preview is a plain
+      link; a wrong one advertises somebody else's game.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SketchRush" />
+    <meta property="og:title" content="SketchRush · Draw and guess" />
+    <meta
+      property="og:description"
+      content="Draw it. Make it obvious. Rooms of up to 10 players, in Spanish and English."
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="SketchRush · Draw and guess" />
+    <meta
+      name="twitter:description"
+      content="Draw it. Make it obvious. Rooms of up to 10 players, in Spanish and English."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap"
+    />
+    <script>
+      // Apply the stored theme before React mounts to avoid a flash of the wrong palette.
+      (function () {
+        try {
+          var stored = localStorage.getItem('dle.theme');
+          var dark =
+            stored === 'dark' ||
+            (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

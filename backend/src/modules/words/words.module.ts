@@ -1,0 +1,14 @@
+import { Module } from '@nestjs/common';
+import { WORD_LIST } from './domain/interfaces/word-list.interface';
+import { WORD_PICKER } from './domain/interfaces/word-picker.interface';
+import { JsonWordListRepository } from './infrastructure/repositories/json-word-list.repository';
+import { RandomWordPicker } from './infrastructure/services/random-word.picker';
+
+@Module({
+  providers: [
+    { provide: WORD_LIST, useClass: JsonWordListRepository },
+    { provide: WORD_PICKER, useClass: RandomWordPicker },
+  ],
+  exports: [WORD_LIST, WORD_PICKER],
+})
+export class WordsModule {}
