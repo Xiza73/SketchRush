@@ -9,8 +9,8 @@ guess counts as a zero and drags it down, and the drawer picked the word out of
 three — so a turn nobody guesses is worth zero, and that is theirs. Drawing clearly
 is the only lever they have.
 
-> Not deployed yet — see [Deploy on Railway](#deploy-on-railway). Run it locally with
-> the two commands below.
+**Play it: [sketchrush.up.railway.app](https://sketchrush.up.railway.app)** — no account,
+no downloads. Create a room, share the code.
 
 ## Run it
 
@@ -111,13 +111,18 @@ runs, and a build that breaks here would have broken the deploy.
 
 ## Deploy on Railway
 
-One Railway project with **two services**, the same shape as the sibling game. The
-family names them `<game>.up.railway.app` for the frontend and `<game>-api…` for the
-backend, so the targets here are `sketchrush.up.railway.app` and
-`sketchrush-api.up.railway.app` — the first of those is stamped on the social cards,
-so if it is taken, re-run `pnpm build:og <domain>` with whatever you get instead.
+It is live:
 
-Once it exists, shipping a change is:
+| Service | URL |
+|---|---|
+| frontend | https://sketchrush.up.railway.app |
+| backend | https://sketchrush-api.up.railway.app (health check at `/health`) |
+
+One Railway project (`SketchRush`) with **two services**, the same shape as the sibling
+game. The frontend domain is stamped on the social cards, so changing it means re-running
+`pnpm build:og <domain>` and the three meta tags it prints.
+
+Shipping a change is:
 
 ```bash
 pnpm deploy
@@ -128,29 +133,45 @@ exports each folder with `git archive` to a temp dir first. That is also the wor
 for the CLI failing with `prefix not found` on a subfolder of a git repo. Commit before
 you deploy, or you will ship the last commit and wonder why.
 
-### From scratch
+### How it was set up, in case it has to be done again
 
-Needs `railway login` and, once, `railway link` from this directory.
+Needs `railway login` once. Then, from this directory:
 
-**1 · `backend`** — Settings → Source → Root Directory `backend`. `railway.json` does
-the rest: Nixpacks, `node dist/main.js`, health check on `/health`. Generate a domain.
-`PORT` is Railway's; do not define it.
+```bash
+railway init --name SketchRush          # creates the project and links this folder
+railway add --service backend
+railway add --service frontend
+```
 
-**2 · `frontend`** — Root Directory `frontend`. Generate a domain. Set
-`VITE_SOCKET_URL` to the backend domain from step 1 — Vite reads it **at build time and
-bakes it into the bundle**, so it has to be set before the build, and changing it later
-means a redeploy, not a restart.
+Generate a domain for each in the UI (Settings → Networking) and rename the subdomain to
+the family's shape: `sketchrush` and `sketchrush-api`. The dialog asks for a port —
+**8080**, because that is what these variables pin:
 
-**3 · close the loop** — set `FRONTEND_URL` on the backend to the frontend's domain.
-That one is read at runtime, for CORS.
+| Service | Variable | Read |
+|---|---|---|
+| both | `PORT=8080` | at runtime |
+| backend | `FRONTEND_URL` = the frontend's URL | at runtime, for CORS |
+| frontend | `VITE_SOCKET_URL` = the backend's URL | **at build time** |
 
-The two variables point at each other, which is why it is three steps rather than one.
+`PORT` is pinned rather than left to Railway on purpose: both services fall back to a
+port of their own if it is missing (3000 and 4173), and the number in the domain dialog
+has to be the one the container actually listens on. Pinning it makes those the same
+number by construction instead of by luck.
+
+`VITE_SOCKET_URL` is the one that catches people out. Vite bakes it into the bundle, so
+it has to be set **before** the first build and changing it later needs a redeploy, not a
+restart. Because both domains exist before either service is deployed, both variables can
+be set up front and the whole thing is one round of deploys rather than three.
+
+There is no GitHub connection: `railway up` uploads a tarball, so the source of a deploy
+is whatever `git archive HEAD` produces. Connecting the repo instead (same repo on both
+services, Root Directory `backend` / `frontend`) would deploy on every push to `main` and
+make `scripts/railway-deploy.mjs` unnecessary.
+
 If nothing connects, the browser console says which half is wrong: a CORS error means
 `FRONTEND_URL` does not match the frontend origin exactly — `https://`, no trailing
 slash. A socket that never opens means `VITE_SOCKET_URL` was wrong when the bundle was
 built.
-
-Then open the frontend, create a room, and join from a second browser with the code.
 
 ## Two layers
 
