@@ -10,6 +10,7 @@
     "build:backend": "pnpm --dir backend build",
     "build:frontend": "pnpm --dir frontend build",
     "test:backend": "pnpm --dir backend test",
+    "build:og": "node scripts/build-og.mjs",
     "deploy:backend": "node scripts/railway-deploy.mjs backend",
     "deploy:frontend": "node scripts/railway-deploy.mjs frontend",
     "deploy": "node scripts/railway-deploy.mjs"

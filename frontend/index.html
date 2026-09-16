@@ -13,26 +13,37 @@
       content="Draw and guess, up to 10 players, in Spanish and English. You pick your word out of three and draw against the clock; the drawer is paid the room's average, so a turn nobody guesses is worth zero."
     />
     <!--
-      No og:image and no og:url until there is a deploy to point them at. The
-      card that used to live here was WordRush's, copied over with everything
-      else: its name, its board and its domain. A missing preview is a plain
-      link; a wrong one advertises somebody else's game.
+      The card is built by `node scripts/build-og.mjs [domain]`, which prints
+      the three lines below with whatever domain it stamped on the image. They
+      have to name the host this is actually served from: a card served from one
+      host and advertised from another is a broken preview, and the absolute URL
+      is not optional — scrapers do not resolve a relative one.
+
+      og-es.png exists too. Which one a scraper should get depends on the reader,
+      and Open Graph has no way to say that from a static page, so the English
+      card is the one advertised.
     -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="SketchRush" />
+    <meta property="og:url" content="https://sketchrush.up.railway.app/" />
     <meta property="og:title" content="SketchRush · Draw and guess" />
     <meta
       property="og:description"
       content="Draw it. Make it obvious. Rooms of up to 10 players, in Spanish and English."
     />
+    <meta property="og:image" content="https://sketchrush.up.railway.app/og-en.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="SketchRush: draw it, make it obvious." />
     <meta property="og:locale" content="en_US" />
     <meta property="og:locale:alternate" content="es_ES" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="SketchRush · Draw and guess" />
     <meta
       name="twitter:description"
       content="Draw it. Make it obvious. Rooms of up to 10 players, in Spanish and English."
     />
+    <meta name="twitter:image" content="https://sketchrush.up.railway.app/og-en.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

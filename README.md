@@ -74,6 +74,7 @@ and point `frontend/.env.local` at your machine instead of localhost:
 | `frontend/` | React 19 + Vite + Tailwind v4 + Zustand. Entirely socket-driven; there is no REST layer. |
 | `docs/context/` | The rules and the scoring, written down before they were coded. |
 | `scripts/sync-contract.mjs` | Copies the socket contract from the backend to the frontend and checks it has not drifted. |
+| `scripts/build-og.mjs` | Draws the social cards. `pnpm build:og <domain>` — Chrome rasterises them, so there is nothing to install, and the domain it stamps has to match the deploy. |
 
 **The server owns time, state and score.** The client never holds the answer, and the
 clock is an absolute deadline sent as an epoch timestamp — never a countdown, so two
