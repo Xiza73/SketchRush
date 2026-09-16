@@ -105,3 +105,19 @@ export const useResultsStore = create<ResultsState & ResultsActions>((set) => {
     reset: () => set(initialState),
   };
 });
+
+/*
+ * Not hot-swappable, on purpose. Development only — `import.meta.hot` is
+ * undefined in a build, so none of this ships.
+ *
+ * This module owns socket subscriptions and a module-level "bound" latch. React
+ * Fast Refresh keeps the mounted tree but re-evaluates this file, so a hot
+ * update leaves the screen reading a new, unbound store while the old one still
+ * holds the listeners: writes land in one instance and the UI reads the other.
+ * The screen then stops reacting to the room and nothing errors.
+ *
+ * `invalidate()` is not enough — it propagates to the importers, and those are
+ * components that Fast Refresh happily accepts, so it never escalates. The
+ * reload has to be asked for outright.
+ */
+if (import.meta.hot) import.meta.hot.accept(() => window.location.reload());

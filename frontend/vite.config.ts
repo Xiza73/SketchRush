@@ -13,5 +13,10 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    // Refuse to start rather than quietly moving to 5175. The default fallback
+    // leaves an older server still answering on 5174 with the module graph it
+    // had when it started, so the browser keeps running code that no longer
+    // exists on disk — and every symptom points at the source instead.
+    strictPort: true,
   },
 });

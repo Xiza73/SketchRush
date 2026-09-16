@@ -44,6 +44,19 @@ window and one private window.
 Create a room in the first, join with the 4-character code in the second, and press
 *Start game*. Two players is the minimum.
 
+### If the app behaves like code you already changed
+
+Check that the dev server printed `http://localhost:5174`. If it says the port was
+taken, an older server is still answering there with the module graph it had when it
+started, and the browser is running code that no longer exists on disk. Kill it:
+
+```bash
+npx kill-port 5174 5175 3100
+```
+
+`strictPort` is on for exactly this reason, so a second `pnpm dev:frontend` now fails
+loudly instead of quietly moving to 5175.
+
 ### From a phone on the same network
 
 ```bash
