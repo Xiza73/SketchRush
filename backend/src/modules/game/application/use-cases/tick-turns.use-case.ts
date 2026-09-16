@@ -61,8 +61,8 @@ export class TickTurnsUseCase {
     if (turn?.phase === 'choosing' && turn.chooseDeadlineAt <= now) {
       // Out of time to pick: the first option is taken for them. Better a word
       // they did not choose than a room waiting on somebody who walked away.
-      const word = turn.choices[0];
-      if (word !== undefined) this.lifecycle.beginDrawing(game, room, word, now);
+      const first = turn.choices[0];
+      if (first) this.lifecycle.beginDrawing(game, room, first.word, now);
       return;
     }
 

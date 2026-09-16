@@ -91,6 +91,7 @@ export const ResultsContainer = ({ roomCode }: ResultsContainerProps) => {
             winnerIsMe={winner.isMe}
             isHost={hostId !== null && hostId === myId}
             restarting={restarting}
+            decidedBy={results.decidedBy}
             onPlayAgain={() => void playAgain()}
             onLeave={leave}
           />

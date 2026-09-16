@@ -18,6 +18,43 @@ export type GuessMode = 'box' | 'chat';
 
 export type RoomStatus = 'lobby' | 'choosing' | 'drawing' | 'between-turns' | 'finished';
 
+/**
+ * The six buckets the word bank is split into. Each turn offers three of them,
+ * one word from each, so the drawer's choice is between different *kinds* of
+ * thing rather than three arbitrary nouns.
+ *
+ * Deliberately no "difficult" bucket, the way Pictionary has one: there the
+ * category is a die roll, here the drawer picks, and the drawer is paid the
+ * room's average. A hard word would be pure downside and nobody would ever take
+ * it. These six are content, not difficulty — none is strictly worse.
+ *
+ * `characters` is anybody who could be a person in the picture: jobs, royalty,
+ * pirates, and the humanoid half of folklore. Those live here rather than under
+ * `animals` — a mermaid is drawn as a person, a dragon is not.
+ */
+export type WordCategory =
+  | 'animals'
+  | 'characters'
+  | 'food'
+  | 'objects'
+  | 'places'
+  | 'actions';
+
+export const WORD_CATEGORIES: readonly WordCategory[] = [
+  'animals',
+  'characters',
+  'food',
+  'objects',
+  'places',
+  'actions',
+];
+
+/** One of the drawer's three options, and which bucket it came from. */
+export interface WordChoice {
+  word: string;
+  category: WordCategory;
+}
+
 export type Emote =
   | 'love'
   | 'wink'
@@ -395,7 +432,8 @@ export interface ClientToServerEvents {
 
 /** Drawer only. Nobody else is ever told what the options were. */
 export interface WordChoicesPayload {
-  words: string[];
+  /** `ROOM_LIMITS.wordChoices` options, each from a different category. */
+  choices: WordChoice[];
   /** Epoch ms the choice expires and the first option is taken. */
   deadline: number;
 }

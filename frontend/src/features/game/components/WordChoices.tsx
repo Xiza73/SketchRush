@@ -1,7 +1,8 @@
+import type { WordChoice } from '@/shared/contract';
 import { useT } from '@/shared/i18n';
 
 interface WordChoicesProps {
-  words: string[];
+  choices: WordChoice[];
   /** Seconds left before the first word is taken for them. */
   secondsLeft: number;
   pending: boolean;
@@ -14,7 +15,7 @@ interface WordChoicesProps {
  * There is no way out of it and no Escape: the clock decides if they do not,
  * so a dismissable dialog would only hide the decision it is about to make.
  */
-export const WordChoices = ({ words, secondsLeft, pending, onChoose }: WordChoicesProps) => {
+export const WordChoices = ({ choices, secondsLeft, pending, onChoose }: WordChoicesProps) => {
   const t = useT();
   const seconds = Math.max(0, Math.ceil(secondsLeft));
 
@@ -37,16 +38,24 @@ export const WordChoices = ({ words, secondsLeft, pending, onChoose }: WordChoic
         <p className="mt-2 mb-4 text-sm text-ink-2">{t.game.chooseWordBody}</p>
 
         <div className="flex flex-col gap-2">
-          {words.map((word, index) => (
+          {choices.map((choice, index) => (
             <button
-              key={word}
+              key={choice.word}
               type="button"
               autoFocus={index === 0}
               disabled={pending}
+              // The category is read out with the word: "Animals, horse" says
+              // more about what you are taking on than the word alone.
+              aria-label={`${t.categories[choice.category]}, ${choice.word}`}
               onClick={() => onChoose(index)}
-              className="flex h-13 items-center justify-center rounded-xl border-[1.5px] border-line bg-surface-2 font-display text-lg font-bold tracking-[0.02em] transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+              className="flex h-14 items-center justify-between gap-3 rounded-xl border-[1.5px] border-line bg-surface-2 px-4 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
             >
-              {word}
+              <span className="font-display text-lg font-bold tracking-[0.02em]">
+                {choice.word}
+              </span>
+              <span className="label shrink-0" aria-hidden="true">
+                {t.categories[choice.category]}
+              </span>
             </button>
           ))}
         </div>

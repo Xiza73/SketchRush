@@ -30,7 +30,25 @@ export interface TurnResultsViewModel {
   myRow: BreakdownRowViewModel | null;
   myStanding: StandingViewModel | null;
   isFinal: boolean;
+  /**
+   * Set when the top two finished on the same points and a tie-break decided
+   * first place. Two identical totals with one winner looks arbitrary unless
+   * the screen says which rule separated them.
+   */
+  decidedBy: { total: number; rule: 'guessed' | 'seconds' } | null;
 }
+
+/** Which rule actually separated the top two, if their totals were level. */
+const tieBreakBetweenTopTwo = (
+  standings: readonly StandingViewModel[],
+): TurnResultsViewModel['decidedBy'] => {
+  const [first, second] = standings;
+  if (!first || !second || first.total !== second.total) return null;
+  if (first.guessed !== second.guessed) return { total: first.total, rule: 'guessed' };
+  if (first.secondsUsed !== second.secondsUsed) return { total: first.total, rule: 'seconds' };
+  // Level on every key: they share rank 1 and nothing was broken.
+  return null;
+};
 
 /**
  * The drawer's row goes first — the turn was theirs, and their score is the one
@@ -80,5 +98,6 @@ export const toTurnResultsViewModel = (
     myRow: rows.find((row) => row.isMe) ?? null,
     myStanding: standings.find((standing) => standing.isMe) ?? null,
     isFinal: gameEnd !== null || payload.nextTurnIn === 0 || payload.turn >= payload.totalTurns,
+    decidedBy: tieBreakBetweenTopTwo(standings),
   };
 };

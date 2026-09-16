@@ -1,11 +1,19 @@
 import type { DrawOp, PlayerTurnState, TurnState } from '@/shared/contract';
 
-/** One line in the room feed. Both guess modes use it; `box` just says less. */
+/**
+ * One line in the room feed. Both guess modes use it; `box` just says less.
+ *
+ * `mine` is the exception: it is written locally when I guess and never leaves
+ * this browser, so a `box` room still lets me see what I have already tried
+ * without the room seeing any of it.
+ */
 export interface FeedEntry {
   id: number;
-  kind: 'chat' | 'guessed' | 'word';
+  kind: 'chat' | 'guessed' | 'word' | 'mine';
   playerId: string | null;
   text: string;
+  /** Only on `mine`: how the server judged it, for the colour. */
+  verdict?: 'correct' | 'close' | 'wrong';
 }
 
 export interface TurnViewModel {

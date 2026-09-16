@@ -100,7 +100,11 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
       toast.error(result.error.code);
       return { correct: false, close: false };
     }
-    return { correct: result.value.correct, close: result.value.close };
+    const { correct, close } = result.value;
+    // Written to my own feed only, so a `box` room still shows me what I have
+    // already tried without showing anybody else a thing.
+    useTurnStore.getState().noteMyGuess(text, correct ? 'correct' : close ? 'close' : 'wrong');
+    return { correct, close };
   };
 
   return (
@@ -111,7 +115,7 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
         <PlayersPanel players={players} />
       </aside>
 
-      <main className="order-1 flex min-w-0 flex-col gap-3 lg:order-2">
+      <main className="order-1 flex min-w-0 flex-col gap-2.5 lg:order-2">
         <TurnHeader
           round={turn.round}
           totalRounds={turn.totalRounds}
@@ -170,7 +174,7 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
 
       {iAmDrawer && choices !== null && (
         <WordChoices
-          words={choices.words}
+          choices={choices.choices}
           secondsLeft={chooseSecondsLeft}
           pending={choosing}
           onChoose={(index) => void chooseWord(index)}

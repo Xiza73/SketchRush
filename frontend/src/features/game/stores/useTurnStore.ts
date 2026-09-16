@@ -30,7 +30,8 @@ interface TurnActions {
   undoLocal: () => void;
   clearLocal: () => void;
   clearChoices: () => void;
-  note: (entry: Omit<FeedEntry, 'id'>) => void;
+  /** Writes my own attempt into my own feed. Never sent anywhere. */
+  noteMyGuess: (text: string, verdict: 'correct' | 'close' | 'wrong') => void;
   reset: () => void;
 }
 
@@ -126,9 +127,12 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
         }));
       });
 
-      socket.on('chat:message', ({ playerId, text }) =>
-        pushFeed({ kind: 'chat', playerId, text }),
-      );
+      socket.on('chat:message', ({ playerId, text }) => {
+        // My own message comes back to me too, and I already wrote it down with
+        // its verdict the moment I sent it. Keeping both would say it twice.
+        if (playerId === myId()) return;
+        pushFeed({ kind: 'chat', playerId, text });
+      });
 
       // The drawer applied every one of these locally before sending them; the
       // broadcast comes back to them too, and replaying it would double the line.
@@ -172,7 +176,7 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
 
     clearChoices: () => set({ choices: null }),
 
-    note: pushFeed,
+    noteMyGuess: (text, verdict) => pushFeed({ kind: 'mine', playerId: myId(), text, verdict }),
 
     reset: () => set(initialState),
   };

@@ -7,6 +7,8 @@ interface FinalBannerProps {
   winnerIsMe: boolean;
   isHost: boolean;
   restarting: boolean;
+  /** Present when the top two finished level and a rule decided it. */
+  decidedBy: { total: number; rule: 'guessed' | 'seconds' } | null;
   onPlayAgain: () => void;
   onLeave: () => void;
 }
@@ -24,6 +26,7 @@ export const FinalBanner = ({
   winnerIsMe,
   isHost,
   restarting,
+  decidedBy,
   onPlayAgain,
   onLeave,
 }: FinalBannerProps) => (
@@ -33,6 +36,15 @@ export const FinalBanner = ({
       <span className="font-display text-2xl font-extrabold tracking-[-0.02em]">
         {winnerIsMe ? t.results.youWin : t.results.winner(winnerName)}
       </span>
+      {/* Two identical totals with one winner reads as a mistake unless the
+          screen names the rule that separated them. */}
+      {decidedBy ? (
+        <span className="text-[13px] text-ink-2">
+          {decidedBy.rule === 'guessed'
+            ? t.results.decidedByTurns(decidedBy.total)
+            : t.results.decidedBySeconds(decidedBy.total)}
+        </span>
+      ) : null}
     </div>
     {isHost ? (
       <Button size="lg" loading={restarting} onClick={onPlayAgain}>

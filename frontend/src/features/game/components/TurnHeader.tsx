@@ -26,7 +26,7 @@ const MaskedWord = ({ masked, word }: { masked: (string | null)[]; word: string 
   const letters = word ? [...word.toUpperCase()] : masked;
   return (
     <p
-      className="m-0 flex flex-wrap justify-center gap-1 font-mono text-2xl font-bold tracking-[0.1em]"
+      className="m-0 flex flex-wrap items-end justify-center gap-0.5 font-mono text-lg leading-none font-bold tracking-[0.08em] sm:gap-1 sm:text-xl"
       // Read as the word or as a run of blanks, not as a pile of single letters.
       aria-label={word ?? masked.map((letter) => letter ?? '_').join('')}
     >
@@ -35,7 +35,7 @@ const MaskedWord = ({ masked, word }: { masked: (string | null)[]; word: string 
           key={index}
           aria-hidden="true"
           className={cn(
-            'inline-flex h-9 w-6 items-end justify-center',
+            'inline-flex h-6 w-4 items-end justify-center sm:w-5',
             letter === ' ' ? '' : 'border-b-2 border-ink-3',
             letter !== null && letter !== ' ' && !word && 'text-accent',
           )}
@@ -64,14 +64,28 @@ export const TurnHeader = ({
   const urgent = !choosing && ratio <= URGENT_RATIO;
 
   return (
-    <div className="rounded-2xl border border-line bg-surface px-4 py-3">
+    // One compact block: context on the left, the word in the middle, the clock
+    // on the right. The canvas is the thing that needs the height, so this gives
+    // up every row it can and the whole screen fits without scrolling.
+    <div className="rounded-2xl border border-line bg-surface px-3.5 pt-2 pb-2.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="label">{t.common.roundOf(round, totalRounds)}</span>
-        <div className="flex items-center gap-2.5">
+        <span className="label shrink-0">{t.common.roundOf(round, totalRounds)}</span>
+
+        <div className="flex min-w-0 flex-1 justify-center">
+          {choosing ? (
+            <p className="m-0 truncate text-sm text-ink-2">
+              {iAmDrawer ? t.game.chooseYourWord : t.game.drawerChoosing(drawerName)}
+            </p>
+          ) : (
+            <MaskedWord masked={masked} word={word} />
+          )}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
           {action}
           <span
             className={cn(
-              'font-display text-2xl font-extrabold tabular-nums',
+              'w-8 text-right font-display text-xl font-extrabold tabular-nums',
               urgent ? 'text-red' : 'text-ink',
             )}
             // A clock that changes every second would be read out every second.
@@ -82,26 +96,19 @@ export const TurnHeader = ({
         </div>
       </div>
 
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-track" aria-hidden="true">
-        <div
-          className={cn('h-full rounded-full transition-[width] duration-100', urgent ? 'bg-red' : 'bg-accent')}
-          style={{ width: `${ratio * 100}%` }}
-        />
-      </div>
-
-      <div className="mt-3 text-center">
-        {choosing ? (
-          <p className="m-0 text-sm text-ink-2">
-            {iAmDrawer ? t.game.chooseYourWord : t.game.drawerChoosing(drawerName)}
-          </p>
-        ) : (
-          <>
-            <MaskedWord masked={masked} word={word} />
-            <p className="mt-1.5 mb-0 text-xs text-ink-3">
-              {iAmDrawer ? t.game.youAreDrawing : t.game.drawerIs(drawerName)}
-            </p>
-          </>
-        )}
+      <div className="mt-2 flex items-center gap-3">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-track" aria-hidden="true">
+          <div
+            className={cn(
+              'h-full rounded-full transition-[width] duration-100',
+              urgent ? 'bg-red' : 'bg-accent',
+            )}
+            style={{ width: `${ratio * 100}%` }}
+          />
+        </div>
+        <span className="shrink-0 truncate text-xs text-ink-3">
+          {iAmDrawer ? t.game.youAreDrawing : t.game.drawerIs(drawerName)}
+        </span>
       </div>
     </div>
   );

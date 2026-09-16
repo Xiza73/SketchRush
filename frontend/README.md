@@ -12,7 +12,13 @@ pnpm build        # tsc -b && vite build → dist/
 pnpm start        # serve -s dist (SPA fallback), used by Railway
 ```
 
-Checks: `pnpm typecheck`, `pnpm lint`, `pnpm format`.
+Checks: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm format`.
+
+Tests are Vitest with no config of its own — it reads `vite.config.ts`, so the
+`@` alias works and the default `node` environment is enough. There is no jsdom
+and nothing renders: the specs cover the pure logic (the canvas painter cursor,
+the stroke-merging rule, the results view model), because that is where the
+bugs that survive a playtest live.
 
 ## Environment
 

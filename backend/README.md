@@ -17,7 +17,7 @@ Checks:
 
 ```bash
 pnpm typecheck                      # sources + tests
-pnpm test                           # 136 unit tests
+pnpm test                           # 146 unit tests
 pnpm lint:check                     # eslint without --fix (includes layer boundaries)
 ```
 
@@ -53,7 +53,7 @@ src/
   main.ts, app.module.ts
   shared/            contract, DomainException, Clock, RoomEventsBus, CORS adapter
   modules/
-    words/           word lists ES/EN (data/*.json), normalisation, random word picker
+    words/           six categories per language (data/<lang>/*.json), normalisation, picker
     rooms/           Room / Player aggregates, lobby use cases, janitor
     game/            Turn / Game aggregates, the canvas buffer, guessing, scoring, ticker
     reactions/       emote broadcast with the burst pause

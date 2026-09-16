@@ -23,7 +23,8 @@ const settings = {
 };
 
 const picker: IWordPicker = {
-  pick: (_lang, count) => Array.from({ length: count }, (_, i) => `w${i}`),
+  pick: (_lang, count) =>
+    Array.from({ length: count }, (_, i) => ({ word: `w${i}`, category: 'objects' as const })),
 };
 
 class FakeClock implements Clock {

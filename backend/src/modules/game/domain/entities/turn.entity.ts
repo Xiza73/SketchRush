@@ -1,4 +1,4 @@
-import type { DrawOp, Point, StrokeTool } from '@shared/contract';
+import type { DrawOp, Point, StrokeTool, WordChoice } from '@shared/contract';
 import { hintCandidates, hintSchedule, maskWord } from '../services/word-mask';
 
 export type TurnPhase = 'choosing' | 'drawing' | 'ended';
@@ -43,8 +43,8 @@ export class Turn {
   readonly hintLetters: number;
 
   phase: TurnPhase = 'choosing';
-  /** The three words offered; never sent to anybody but the drawer. */
-  choices: string[] = [];
+  /** The three options offered, each from its own category; drawer only. */
+  choices: WordChoice[] = [];
   /** Epoch ms at which the first choice is taken for them. */
   chooseDeadlineAt = 0;
   word: string | null = null;
@@ -69,7 +69,7 @@ export class Turn {
     this.hintLetters = props.hintLetters;
   }
 
-  offer(choices: string[], now: number, chooseSeconds: number): void {
+  offer(choices: WordChoice[], now: number, chooseSeconds: number): void {
     this.choices = choices;
     this.chooseDeadlineAt = now + chooseSeconds * 1000;
   }

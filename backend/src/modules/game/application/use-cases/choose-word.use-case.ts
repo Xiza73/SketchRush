@@ -29,9 +29,9 @@ export class ChooseWordUseCase {
     if (turn.phase !== 'choosing') throw new DomainException('not_choosing');
     if (turn.drawerId !== playerId) throw new DomainException('not_drawer');
 
-    const word = turn.choices[index];
-    if (word === undefined) throw new DomainException('invalid_payload');
+    const choice = turn.choices[index];
+    if (!choice) throw new DomainException('invalid_payload');
 
-    this.lifecycle.beginDrawing(game, room, word, this.clock.now());
+    this.lifecycle.beginDrawing(game, room, choice.word, this.clock.now());
   }
 }

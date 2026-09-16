@@ -1,4 +1,4 @@
-import type { Emote, ErrorCode, Language } from '@/shared/contract';
+import type { Emote, ErrorCode, Language, WordCategory } from '@/shared/contract';
 
 /** Spanish is the source dictionary: its shape is the `Dictionary` type. */
 export const es = {
@@ -200,6 +200,10 @@ export const es = {
     afterRounds: (played: number, total: number) => `tras ${played} de ${total} turnos`,
     finalTable: 'Tabla final',
     tiebreak: 'Desempate: más turnos acertados, luego menos segundos pensando.',
+    decidedByTurns: (total: number) =>
+      `Empate a ${total}: gana quien acertó más turnos.`,
+    decidedBySeconds: (total: number) =>
+      `Empate a ${total}: gana quien tardó menos en acertar.`,
     turnsGuessed: (n: number) => (n === 1 ? '1 turno acertado' : `${n} turnos acertados`),
     secondsThinking: (n: number) => `${n} s pensando`,
     winner: (name: string) => `${name} gana la partida`,
@@ -229,6 +233,14 @@ export const es = {
     timeout: 'El servidor no responde.',
     disconnected: 'Sin conexión con el servidor.',
   } satisfies Record<ErrorCode | 'timeout' | 'disconnected', string>,
+  categories: {
+    animals: 'Animales',
+    characters: 'Personajes',
+    food: 'Comida',
+    objects: 'Objetos',
+    places: 'Lugares',
+    actions: 'Acciones',
+  } satisfies Record<WordCategory, string>,
   emotes: {
     love: 'Me encanta',
     wink: 'Guiño',

@@ -41,8 +41,9 @@ Everything else in this document is identical in both modes.
 1. **The drawer** is the next player in the rotation. The order is fixed when the
    game starts and does not change if somebody leaves mid-game; a missing player
    is skipped.
-2. **Word choice.** The drawer is offered **three words** and has 10 s to pick.
-   No pick, and the first is taken automatically. Nobody else sees the options.
+2. **Word choice.** The drawer is offered **three words, each from a different
+   category**, and has 10 s to pick. No pick, and the first is taken
+   automatically. Nobody else sees the options — or the categories.
 3. **Drawing.** The drawer has the room's draw time. Everyone else sees the
    strokes appear as they are made, and the word as blanks: `_ _ _ _ _`.
 4. **Guessing.** A guesser who gets it is locked in: they see the word, keep
@@ -124,3 +125,51 @@ seconds used to guess.
 "Jugar de nuevo" reuses the room — same code, same seats, same host — and puts it
 back in the lobby so the host can change the rules first. Same rule as WordRush,
 host only, finished games only.
+
+## The word bank
+
+Six categories per language, one JSON file each under
+`backend/src/modules/words/data/<lang>/<category>.json` — 1 470 Spanish words
+and 1 441 English:
+
+| Category | Spanish | English | ES | EN |
+|---|---|---|---|---|
+| `animals` | Animales | Animals | 246 | 244 |
+| `characters` | Personajes | Characters | 236 | 233 |
+| `food` | Comida | Food | 204 | 196 |
+| `objects` | Objetos | Objects | 325 | 320 |
+| `places` | Lugares | Places | 249 | 246 |
+| `actions` | Acciones | Actions | 210 | 202 |
+
+Every turn draws **three different categories at random and one unplayed word
+from each**, so the drawer chooses between kinds of thing rather than three
+arbitrary nouns. A word is never offered twice in one game until the bank runs
+dry, at which point it repeats rather than offering fewer than three.
+
+`characters` is anybody who could be a person in the picture: jobs, royalty,
+pirates, family, and the **humanoid** half of folklore. A mermaid, a centaur and
+an ogre live here; a dragon, a phoenix and a kraken stay under `animals`,
+because one is drawn as a person and the other is not.
+
+**There is deliberately no "difficult" category**, the way Pictionary has one.
+There the category is a die roll; here the drawer picks, and the drawer is paid
+the room's average. A hard word would be pure downside and nobody would ever
+take it. These six are content, not difficulty — none is strictly worse than
+another.
+
+The same word may not appear in two categories: `JsonWordListRepository` refuses
+to boot if it does, because one turn could then offer it twice and "already
+played" would hide it from both.
+
+Entries are single words, lowercase, three letters or more; `random-word.picker.spec.ts`
+fails the build on any that is not, and on a repeat inside a category.
+
+For scale, measured 2026-09-15: skribbl.io ships 3 692 English and 2 338 Spanish
+words, Pinturillo 2 advertises around 5 000. Ours is roughly two thirds of
+skribbl's Spanish bank and 40 % of its English one — and every entry here was
+picked to be drawable, which is not true of theirs.
+
+**A word is guessed exactly as it is written.** The mask is a promise about
+letter count, so accepting a regional synonym of a different length would
+contradict it: `durazno` shows seven blanks, and only `durazno` fills them.
+Accents and case are still ignored — those do not change the count.

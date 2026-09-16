@@ -83,7 +83,7 @@ export class TurnLifecycleService {
     this.bus.publish({
       roomCode: room.code,
       event: 'turn:choices',
-      payload: { words: turn.choices, deadline: turn.chooseDeadlineAt },
+      payload: { choices: turn.choices, deadline: turn.chooseDeadlineAt },
       toPlayerId: drawerId,
     });
     this.bus.publish({ roomCode: room.code, event: 'lobby:update', payload: room.toLobbyState() });

@@ -1,10 +1,12 @@
-import type { InputHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, Ref } from 'react';
 
 import { cn } from '@/shared/lib/cn';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   mono?: boolean;
   invalid?: boolean;
+  /** React 19 passes `ref` as a plain prop; declared so it is typed here too. */
+  ref?: Ref<HTMLInputElement>;
 }
 
 export const Input = ({ mono, invalid, className, ...rest }: InputProps) => (

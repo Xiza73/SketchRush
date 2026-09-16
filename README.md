@@ -78,12 +78,21 @@ pnpm test:backend
 ```
 
 ```bash
+pnpm --dir frontend test
+```
+
+```bash
 pnpm check-contract
 ```
 
 Each service also has `typecheck` and `lint` (`pnpm --dir backend lint:check`,
 `pnpm --dir frontend lint`). The backend's lint includes the architecture boundaries:
 `game` may depend on `rooms`, never the reverse.
+
+All of it runs in CI on every push to `main` and every pull request —
+`.github/workflows/ci.yml`, three jobs: the contract guard, the backend and the
+frontend. The frontend job ends with `pnpm build` because that is what a deploy
+runs, and a build that breaks here would have broken the deploy.
 
 ## Two layers
 

@@ -43,6 +43,7 @@ export const GuessPanel = ({
   const [text, setText] = useState('');
   const [verdict, setVerdict] = useState<'close' | 'wrong' | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const list = listRef.current;
@@ -52,12 +53,17 @@ export const GuessPanel = ({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const guess = text.trim();
-    if (!guess || pending) return;
+    if (!guess) return;
     setText('');
     setVerdict(null);
+    // The box never goes disabled mid-guess, so the caret stays where it is and
+    // the next word can be typed while this one is still in the air. This one
+    // call covers the case where something else stole focus anyway.
+    inputRef.current?.focus();
     const result = await onGuess(guess);
     if (result.correct) return;
     setVerdict(result.close ? 'close' : 'wrong');
+    inputRef.current?.focus();
   };
 
   const label = (entry: FeedEntry): string => {
@@ -98,6 +104,15 @@ export const GuessPanel = ({
               entry.kind === 'guessed' && 'bg-green-soft font-semibold text-green-ink',
               entry.kind === 'word' && 'bg-surface-2 font-semibold',
               entry.kind === 'chat' && 'text-ink-2',
+              // My own attempts, colour-coded by how they landed. Only I have
+              // these: in a `box` room nobody else ever sees what I typed.
+              entry.kind === 'mine' &&
+                'self-end border text-right font-medium ' +
+                  (entry.verdict === 'correct'
+                    ? 'border-green bg-green-soft text-green-ink'
+                    : entry.verdict === 'close'
+                      ? 'border-yellow-line bg-yellow-soft text-yellow-ink'
+                      : 'border-line bg-surface-2 text-ink-3 line-through'),
             )}
           >
             {entry.kind === 'chat' && (
@@ -119,8 +134,13 @@ export const GuessPanel = ({
         ) : (
           <form onSubmit={submit} className="flex gap-2">
             <Input
+              ref={inputRef}
               value={text}
-              disabled={!canGuess || pending}
+              // Deliberately not disabled while a guess is in flight: disabling a
+              // focused input blurs it, and losing the caret after every Enter is
+              // the difference between a fast game and a clumsy one.
+              disabled={!canGuess}
+              autoFocus
               maxLength={ROOM_LIMITS.guessMaxLength}
               autoComplete="off"
               aria-label={mode === 'chat' ? t.game.guessOrChat : t.game.yourGuess}

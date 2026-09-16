@@ -178,7 +178,16 @@ export const DrawingCanvas = ({
     <div
       ref={wrapRef}
       className={cn(
-        'relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-line bg-white shadow-card',
+        // 4:3 is not negotiable — the coordinates are normalised, so a sheet
+        // that is a different shape on my screen draws a different picture. To
+        // bound it by height without breaking that, the *width* is capped at
+        // what 4:3 allows in the height budget, and the height follows.
+        //
+        // 19rem is everything else on the tallest version of this screen: the
+        // top bar, the turn header, the drawer's toolbar, the gaps and the page
+        // padding. Watchers have no toolbar and could afford more, but a canvas
+        // that is the same size for everyone is worth more than those pixels.
+        'relative mx-auto aspect-[4/3] w-full max-w-[calc((100svh-19rem)*4/3)] overflow-hidden rounded-2xl border border-line bg-white shadow-card',
         className,
       )}
     >

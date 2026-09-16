@@ -214,6 +214,8 @@ export const en: Dictionary = {
     afterRounds: (played, total) => `after ${played} of ${total} turns`,
     finalTable: 'Final table',
     tiebreak: 'Tie-break: more turns guessed, then fewer seconds thinking.',
+    decidedByTurns: (total) => `Tied on ${total}: more turns guessed wins it.`,
+    decidedBySeconds: (total) => `Tied on ${total}: faster to get there wins it.`,
     turnsGuessed: (n) => (n === 1 ? '1 turn guessed' : `${n} turns guessed`),
     secondsThinking: (n) => `${n} s thinking`,
     winner: (name) => `${name} wins the game`,
@@ -242,6 +244,14 @@ export const en: Dictionary = {
     internal: 'Something went wrong. Try again.',
     timeout: 'The server is not responding.',
     disconnected: 'No connection to the server.',
+  },
+  categories: {
+    animals: 'Animals',
+    characters: 'Characters',
+    food: 'Food',
+    objects: 'Objects',
+    places: 'Places',
+    actions: 'Actions',
   },
   emotes: {
     love: 'Love it',
