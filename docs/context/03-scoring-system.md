@@ -25,6 +25,32 @@ player who knows one game already knows how this one scores.
 Not guessing is zero. There is no consolation here — in WordRush a green letter
 is real progress you can show, and in a drawing game there is no equivalent.
 
+### Both halves matter, and the clock matters more
+
+It is **not** a placing ladder. The clock is the larger term and it moves
+continuously; the place bonus is a small, discrete top-up for the first three.
+
+| | Range | Moves |
+|---|---|---|
+| `timePercent` | 0 – 100 | Every second, for everybody |
+| `positionBonus` | 20 / 15 / 10 / 0 | Once, and only for the first three |
+
+The gap between first and second place is **5 points**, which is five percent of
+one turn's clock — about three seconds of a 60 s turn. So somebody who works it
+out a few seconds earlier beats somebody who merely pressed enter first, and from
+fourth place on the clock is the only thing left. Order alone never decides it.
+
+A fourth-place guess with 90 % of the clock left (90) beats a first-place guess
+with 50 % left (70). That is the intended shape.
+
+### Seeing it while it is still in play
+
+The game screen carries a live preview of what the turn pays if it ended now:
+the clock and the place bonus for a guesser, the room's average so far for the
+drawer. It is `frontend/src/features/game/models/score-preview.model.ts`, it
+mirrors the formulas above, and its tests are what keep the two in step. The
+server still scores the turn; the card only shows the working.
+
 ## Drawing
 
 ```

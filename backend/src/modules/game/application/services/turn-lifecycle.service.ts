@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   ROOM_LIMITS,
+  SCORING,
   type PlayerTurnState,
   type TurnEndPayload,
   type TurnState,
@@ -195,8 +196,10 @@ function turnPlayers(turn: Turn, room: Room): PlayerTurnState[] {
       playerId: player.id,
       guessed: guess !== undefined,
       position: guess?.position ?? null,
-      // Points are settled at turn:end; nothing is final while it is running.
-      points: 0,
+      // The same number `player:guessed` broadcast when they got it. It has to
+      // be here too: a player who reloads mid-turn gets this snapshot and
+      // nothing else, and the score preview is built from these rows.
+      points: guess ? guess.timePercent + (SCORING.positionBonus[guess.position - 1] ?? 0) : 0,
     };
   });
 }

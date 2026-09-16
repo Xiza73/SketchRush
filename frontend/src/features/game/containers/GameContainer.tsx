@@ -17,6 +17,13 @@ import { useDraw } from '../api/draw/useDraw';
 import { useSubmitGuess } from '../api/submit-guess/useSubmitGuess';
 import { CanvasToolbar } from '../components/CanvasToolbar';
 import { DrawingCanvas, type CanvasTool } from '../components/DrawingCanvas';
+import { ScorePreviewCard } from '../components/ScorePreviewCard';
+import {
+  drawerPreview,
+  guesserPreview,
+  settledGuesserPreview,
+  type ScorePreview,
+} from '../models/score-preview.model';
 import { GuessPanel } from '../components/GuessPanel';
 import { PlayersPanel, type PanelPlayer } from '../components/PlayersPanel';
 import { TurnHeader } from '../components/TurnHeader';
@@ -92,6 +99,17 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
     });
   }, [turn, lobby, standings, myId]);
 
+  // What the turn pays if it ended right now. Recomputed on every clock frame
+  // for a guesser, because the falling number *is* the point being made.
+  const preview = useMemo<ScorePreview | null>(() => {
+    if (!turn || turn.choosing) return null;
+    if (turn.drawerId === myId) return drawerPreview(turn.drawerId, turn.players);
+    const mine = turn.players.find((player) => player.playerId === myId);
+    return mine?.guessed
+      ? settledGuesserPreview(mine)
+      : guesserPreview(secondsLeft, turn.drawSeconds, turn.players);
+  }, [turn, myId, secondsLeft]);
+
   if (!turn || !lobby) return <PageLoading title={t.game.turnStarting} />;
 
   const onGuess = async (text: string) => {
@@ -111,7 +129,8 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
     <div className="grid flex-1 grid-cols-1 gap-4 px-4 py-4 sm:px-7 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
       {/* On a phone the guess box comes straight after the canvas: it is the one
           control that has to be in reach, and the table can wait below it. */}
-      <aside className="order-3 lg:order-1">
+      <aside className="order-3 flex flex-col gap-2.5 lg:order-1">
+        {preview && <ScorePreviewCard t={t} preview={preview} settled={iGuessed} />}
         <PlayersPanel players={players} />
       </aside>
 

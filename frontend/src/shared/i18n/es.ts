@@ -172,6 +172,22 @@ export const es = {
     notIt: 'No es esa.',
     youGotIt: 'Acertaste',
     drawerCannotGuess: 'Estás dibujando: este turno no adivinas.',
+    /* Live score preview */
+    previewIfYouGetIt: 'Si aciertas ahora',
+    previewLockedIn: 'Tu turno',
+    previewDrawing: 'Si el turno acabara ahora',
+    previewTimeLeft: (percent: number) => `Tiempo restante · ${percent} %`,
+    previewPosition: (position: number) =>
+      position === 1 ? 'Primero en acertar' : `Puesto ${position}`,
+    previewNoPosition: 'Sin bono de puesto',
+    previewGuessedSoFar: (guessed: number, total: number) =>
+      `Promedio de la sala · ${guessed} de ${total}`,
+    previewAllGuessed: 'Si aciertan todos',
+    previewTotal: 'Total del turno',
+    previewGuesserNote:
+      'Cada 1 % de tiempo que queda es 1 punto, así que baja cada segundo. El bono es solo para los tres primeros.',
+    previewDrawerNote:
+      'Se divide entre todos los que podían acertar: quien no llega cuenta como cero y baja el promedio.',
     /* Reactions (family layer) */
     reactions: 'Reacciones',
     reactionsOpen: 'Enviar una reacción',

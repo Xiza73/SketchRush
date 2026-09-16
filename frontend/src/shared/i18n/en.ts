@@ -187,6 +187,22 @@ export const en: Dictionary = {
     notIt: 'Not that one.',
     youGotIt: 'You got it',
     drawerCannotGuess: 'You are drawing: no guessing this turn.',
+    /* Live score preview */
+    previewIfYouGetIt: 'If you get it now',
+    previewLockedIn: 'Your turn',
+    previewDrawing: 'If the turn ended now',
+    previewTimeLeft: (percent: number) => `Time left · ${percent}%`,
+    previewPosition: (position: number) =>
+      position === 1 ? 'First to guess' : `Place ${position}`,
+    previewNoPosition: 'No place bonus',
+    previewGuessedSoFar: (guessed: number, total: number) =>
+      `The room's average · ${guessed} of ${total}`,
+    previewAllGuessed: 'If everybody gets it',
+    previewTotal: 'Turn total',
+    previewGuesserNote:
+      'Every 1% of the clock still left is 1 point, so it falls every second. The bonus goes to the first three only.',
+    previewDrawerNote:
+      'Divided by everybody who could have guessed: anyone who misses counts as a zero and drags it down.',
     /* Reactions (family layer) */
     reactions: 'Reactions',
     reactionsOpen: 'Send a reaction',
