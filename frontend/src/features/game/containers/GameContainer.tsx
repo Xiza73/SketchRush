@@ -82,19 +82,33 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
     if (!turn || !lobby) return [];
     const totals = new Map(standings?.map((row) => [row.playerId, row.total]) ?? []);
     const byId = new Map(turn.players.map((player) => [player.playerId, player]));
-    // The lobby order is the drawing rotation, so the panel doubles as "who's next".
-    return lobby.players.map((player) => {
-      const state = byId.get(player.id);
+    const seats = new Map(lobby.players.map((player) => [player.id, player]));
+    // The server's drawing order, not the lobby's join order: the panel is the
+    // running order, so it has to be listed in the order it will actually run.
+    // Anybody in the lobby but not in the order joined after the game started
+    // and has no turn of their own; they go last.
+    const drawingAt = turn.order.indexOf(turn.drawerId);
+    const ordered = [
+      ...turn.order.filter((id) => seats.has(id)),
+      ...lobby.players.filter((player) => !turn.order.includes(player.id)).map((p) => p.id),
+    ];
+
+    return ordered.map((id, index) => {
+      const seat = seats.get(id)!;
+      const state = byId.get(id);
+      const place = turn.order.indexOf(id);
       return {
-        playerId: player.id,
+        playerId: id,
         guessed: state?.guessed ?? false,
         position: state?.position ?? null,
         points: state?.points ?? 0,
-        name: player.name,
-        connected: player.connected,
-        isMe: player.id === myId,
-        isDrawer: player.id === turn.drawerId,
-        total: totals.get(player.id) ?? 0,
+        name: seat.name,
+        connected: seat.connected,
+        isMe: id === myId,
+        isDrawer: id === turn.drawerId,
+        total: totals.get(id) ?? 0,
+        turnPosition: index + 1,
+        drawnThisRound: place >= 0 && drawingAt >= 0 && place < drawingAt,
       };
     });
   }, [turn, lobby, standings, myId]);

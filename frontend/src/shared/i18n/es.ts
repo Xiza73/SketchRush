@@ -153,12 +153,17 @@ export const es = {
     undo: 'Deshacer',
     clearCanvas: 'Borrar todo',
     /* The table */
+    drawingOrder: 'Orden de dibujo',
     drawing: 'dibujando',
     guessedAt: (n: number) => `${n}.º en adivinar`,
     stillGuessing: 'pensando…',
+    alreadyDrew: 'ya dibujó',
     disconnected: 'desconectado',
     /* Guessing */
     roomFeed: 'Sala en vivo',
+    feedLive: 'Escribe aquí para puntuar',
+    feedAttemptClose: (name: string) => `${name} está cerca`,
+    feedAttemptWrong: (name: string) => `${name} lo intentó`,
     modeBox: 'En privado',
     modeChat: 'Chat abierto',
     feedEmpty: 'Todavía nadie dijo nada. Escribe lo primero que veas.',

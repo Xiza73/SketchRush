@@ -45,13 +45,26 @@ export class SubmitGuessUseCase {
     const verdict = judgeGuess(text, turn.word ?? '');
 
     if (verdict !== 'correct') {
-      // A chat room repeats what was typed — unless it gives the word away,
-      // which someone who already knows it could do by accident or on purpose.
-      if (room.settings.guessMode === 'chat' && !revealsAnswer(text, turn.word ?? '')) {
+      if (room.settings.guessMode === 'chat') {
+        // A chat room repeats what was typed — unless it gives the word away,
+        // which someone who already knows it could do by accident or on purpose.
+        if (!revealsAnswer(text, turn.word ?? '')) {
+          this.bus.publish({
+            roomCode: room.code,
+            event: 'chat:message',
+            payload: { playerId, text },
+          });
+        }
+      } else {
+        // A box room tells the drawer alone that somebody tried and how near
+        // they got. They have nothing to type and no other way to know whether
+        // the drawing is working; the text itself stays private, which is the
+        // whole promise a box room makes to the people guessing.
         this.bus.publish({
           roomCode: room.code,
-          event: 'chat:message',
-          payload: { playerId, text },
+          event: 'guess:attempt',
+          payload: { playerId, close: verdict === 'close' },
+          toPlayerId: turn.drawerId,
         });
       }
       return { correct: false, close: verdict === 'close', position: null, points: 0 };

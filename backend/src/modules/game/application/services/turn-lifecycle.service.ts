@@ -37,6 +37,7 @@ export class TurnLifecycleService {
       drawSeconds: turn.drawSeconds,
       startedAt: turn.startedAt,
       masked: turn.masked(),
+      order: [...game.order],
       word: playerId === turn.drawerId ? turn.word : null,
       canvas: turn.canvas,
       players: turnPlayers(turn, room),

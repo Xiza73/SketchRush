@@ -168,12 +168,17 @@ export const en: Dictionary = {
     undo: 'Undo',
     clearCanvas: 'Clear the canvas',
     /* The table */
+    drawingOrder: 'Drawing order',
     drawing: 'drawing',
     guessedAt: (n) => `${ordinal(n)} to guess`,
     stillGuessing: 'thinking…',
+    alreadyDrew: 'already drew',
     disconnected: 'offline',
     /* Guessing */
     roomFeed: 'Live room',
+    feedLive: 'Type here to score',
+    feedAttemptClose: (name) => `${name} is close`,
+    feedAttemptWrong: (name) => `${name} had a go`,
     modeBox: 'Private',
     modeChat: 'Open chat',
     feedEmpty: 'Nothing said yet. Type the first thing you see.',

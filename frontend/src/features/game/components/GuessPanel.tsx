@@ -50,6 +50,13 @@ export const GuessPanel = ({
     if (list) list.scrollTop = list.scrollHeight;
   }, [feed]);
 
+  // The drawer picking a word is the starting gun, and it fires on somebody
+  // else's screen. Without this the turn opens with the clock already running
+  // and the caret nowhere, and the first thing every guesser does is click.
+  useEffect(() => {
+    if (canGuess) inputRef.current?.focus();
+  }, [canGuess]);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const guess = text.trim();
@@ -72,15 +79,34 @@ export const GuessPanel = ({
         return t.game.feedGuessed(nameOf(entry.playerId ?? ''), Number(entry.text));
       case 'word':
         return t.game.feedWordWas(entry.text);
+      case 'attempt':
+        return entry.verdict === 'close'
+          ? t.game.feedAttemptClose(nameOf(entry.playerId ?? ''))
+          : t.game.feedAttemptWrong(nameOf(entry.playerId ?? ''));
       default:
         return entry.text;
     }
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-surface">
-      <div className="flex items-center justify-between border-b border-line px-3.5 py-2.5">
-        <span className="label">{t.game.roomFeed}</span>
+    <div
+      className={cn(
+        // Typing here is the only way a guesser scores, so while the box is live
+        // the whole panel says so. The accent carries action in this family; it
+        // never touches a right/wrong state, and none of those live up here.
+        'flex min-h-0 flex-1 flex-col rounded-2xl border bg-surface transition-colors',
+        canGuess ? 'border-accent shadow-card' : 'border-line',
+      )}
+    >
+      <div
+        className={cn(
+          'flex items-center justify-between border-b px-3.5 py-2.5 transition-colors',
+          canGuess ? 'border-accent-soft bg-accent-soft' : 'border-line',
+        )}
+      >
+        <span className={cn('label', canGuess && 'text-accent')}>
+          {canGuess ? t.game.feedLive : t.game.roomFeed}
+        </span>
         <span className="text-xs text-ink-3">
           {mode === 'chat' ? t.game.modeChat : t.game.modeBox}
         </span>
@@ -104,6 +130,14 @@ export const GuessPanel = ({
               entry.kind === 'guessed' && 'bg-green-soft font-semibold text-green-ink',
               entry.kind === 'word' && 'bg-surface-2 font-semibold',
               entry.kind === 'chat' && 'text-ink-2',
+              // The drawer's private view of a miss. Dashed because it marks a
+              // gap rather than a value: somebody tried, and that is all it
+              // will ever say about what they typed.
+              entry.kind === 'attempt' &&
+                'border border-dashed ' +
+                  (entry.verdict === 'close'
+                    ? 'border-yellow-line bg-yellow-soft font-medium text-yellow-ink'
+                    : 'border-line text-ink-3'),
               // My own attempts, colour-coded by how they landed. Only I have
               // these: in a `box` room nobody else ever sees what I typed.
               entry.kind === 'mine' &&
@@ -150,13 +184,13 @@ export const GuessPanel = ({
                 setText(event.target.value);
                 if (verdict) setVerdict(null);
               }}
-              className="h-11"
+              className="h-12 text-base"
             />
             <button
               type="submit"
               disabled={!canGuess || pending || text.trim().length === 0}
               aria-label={t.game.sendGuess}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-accent text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-accent text-white transition-colors hover:bg-accent-hover active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-40"
             >
               <ArrowRightIcon size={18} />
             </button>

@@ -38,13 +38,18 @@ Everything else in this document is identical in both modes.
 
 ## Turn
 
-1. **The drawer** is the next player in the rotation. The seats are fixed when
-   the game starts, and the order **shifts one seat every round**: seats A, B, C
-   draw A B C, then B C A, then C A B. Everybody still draws exactly once per
-   round — what moves around is who opens a round and who gets the last word of
-   the game, neither of which should belong to the same player every time. The
-   cost is that the gap between a player's own turns stops being constant. A
-   player who leaves mid-game is skipped and their seat is not refilled.
+1. **The drawer** is the next player in the running order. That order is
+   **shuffled once when the game starts and then never moves** — same sequence
+   every round, to the end. A player who leaves mid-game is skipped and their
+   seat is not refilled, so everybody keeps the position they started with.
+
+   It is shuffled rather than taken in join order, which would hand the opening
+   turn to whoever clicked *create*, every game, in a room that mostly plays with
+   the same people. It briefly rotated a seat per round instead, for the same
+   reason; shuffling fixes the unfairness just as well and keeps the thing
+   rotation could not — **a running order the room can see**, numbered, in the
+   left-hand panel, so everybody can count their own turn down. Being able to
+   read it is worth more than evening out an opening slot nobody was tracking.
 2. **Word choice.** The drawer is offered **three words, each from a different
    category**, and has 10 s to pick. No pick, and the first is taken
    automatically. Nobody else sees the options — or the categories.
@@ -83,11 +88,18 @@ Only the drawer can draw. The server refuses a stroke from anybody else
   distinction is a mechanic. Here you type free text against a clock, and making
   somebody find `ñ` or an accent costs them the turn for no gain. The bank still
   stores the natural spelling, because the reveal shows it.
-- **A near miss is told to the guesser.** One letter off from the answer
-  (edit distance 1) answers `casi` — in **box** mode only that player sees it, in
-  **chat** mode the room sees the guess like any other message.
+- **A near miss is told to the guesser**, and only ever as "close" — never how
+  far off. See [Near misses](#near-misses) for what earns it.
 - **The drawer cannot guess**, and cannot type the word: a guess containing the
   answer is dropped from a chat-mode room rather than broadcast.
+- **The drawer alone is told that somebody missed, and whether they were close.**
+  Only in a **box** room, only to the drawer, and never the text that was typed.
+  They have nothing to type for the whole turn and otherwise sit watching silence
+  with no idea whether the drawing is working; this gives them the one signal
+  that answers it. The text stays private because that is the promise a box room
+  makes to the people guessing, and it is not the drawer's to break. A **chat**
+  room sends nothing extra — there the drawer already reads every attempt, which
+  is strictly more than this says.
 - Guessing is rate limited per socket, like every other floodable event.
 
 ## Hints

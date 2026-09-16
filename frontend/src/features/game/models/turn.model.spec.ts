@@ -60,6 +60,7 @@ describe('toTurnViewModel', () => {
     round: 1,
     totalRounds: 3,
     drawerId: 'ana',
+    order: ['ana', 'bruno'],
     drawSeconds: 60,
     startedAt: 1_000_000,
     masked: ['g', null, null, null],

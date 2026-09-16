@@ -9,10 +9,15 @@ import type { DrawOp, PlayerTurnState, TurnState } from '@/shared/contract';
  */
 export interface FeedEntry {
   id: number;
-  kind: 'chat' | 'guessed' | 'word' | 'mine';
+  /**
+   * `attempt` is the drawer's alone: a `box` room tells them that somebody
+   * missed and how near, never what was typed. It is the only company they get
+   * in a turn where they have nothing to type themselves.
+   */
+  kind: 'chat' | 'guessed' | 'word' | 'mine' | 'attempt';
   playerId: string | null;
   text: string;
-  /** Only on `mine`: how the server judged it, for the colour. */
+  /** On `mine` and `attempt`: how the server judged it, for the colour. */
   verdict?: 'correct' | 'close' | 'wrong';
 }
 
@@ -30,6 +35,8 @@ export interface TurnViewModel {
   masked: (string | null)[];
   /** The answer, and only ever for the drawer. */
   word: string | null;
+  /** Player ids in drawing order, fixed for the whole game. */
+  order: string[];
   players: PlayerTurnState[];
   /** True between `turn:start` and the moment the drawer picks. */
   choosing: boolean;
@@ -47,6 +54,7 @@ export const toTurnViewModel = (dto: TurnState): TurnViewModel => ({
   deadlineAt: dto.startedAt === 0 ? 0 : dto.startedAt + dto.drawSeconds * 1000,
   masked: dto.masked,
   word: dto.word,
+  order: dto.order,
   players: dto.players,
   choosing: dto.startedAt === 0,
 });

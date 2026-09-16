@@ -127,6 +127,13 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
         }));
       });
 
+      // Addressed to the drawer and nobody else; the server only sends it in a
+      // `box` room, where it is the drawer's one window onto whether the
+      // drawing is working at all.
+      socket.on('guess:attempt', ({ playerId, close }) =>
+        pushFeed({ kind: 'attempt', playerId, text: '', verdict: close ? 'close' : 'wrong' }),
+      );
+
       socket.on('chat:message', ({ playerId, text }) => {
         // My own message comes back to me too, and I already wrote it down with
         // its verdict the moment I sent it. Keeping both would say it twice.

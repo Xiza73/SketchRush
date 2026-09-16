@@ -11,12 +11,12 @@ import type { Turn } from './turn.entity';
  * thing that keeps `rooms` swappable.
  */
 export class Game {
-  /** The seats, in the order they were taken. Fixed when the game starts. */
+  /** Drawing order, shuffled when the game starts and fixed for the rest of it. */
   readonly order: readonly string[];
   readonly totalRounds: number;
   /** 1-based, counting only turns actually played. */
   turnNumber = 0;
-  /** How many slots the rotation has walked, including skipped seats. Never wraps. */
+  /** How far through `order` the rotation has walked, including skipped seats. */
   private cursor = 0;
   readonly usedWords: string[] = [];
   current: Turn | null = null;
@@ -47,33 +47,24 @@ export class Game {
   }
 
   /**
-   * Which seat draws at a given slot, rotating the order one place per round.
-   *
-   * Seats A, B, C draw A B C, then B C A, then C A B. A fixed order would hand
-   * the same player the opening turn of every round — the one turn nobody gets
-   * to warm up for by watching somebody else first — and hand the same player
-   * the last word of the game every time. Rotating moves both around.
-   *
-   * The cost is that the gap between a player's turns stops being constant: A
-   * draws at 1, 6 and 8 rather than 1, 4 and 7. Everybody still draws exactly
-   * once per round, which is the part that decides the score.
-   */
-  private seatAt(slot: number): number {
-    const seats = this.order.length;
-    return (Math.floor(slot / seats) + slot) % seats;
-  }
-
-  /**
-   * Who draws next, walking the rotation and skipping anybody who has left.
+   * Who draws next, walking the order and skipping anybody who has left.
    * Returns null when nobody in the order is still seated — the caller ends the
    * game rather than looping forever.
+   *
+   * The order is shuffled once when the game starts and then never moves again,
+   * round after round. It was briefly rotated a seat per round so that the same
+   * player would not open every round; shuffling solves the same unfairness —
+   * the opener is nobody's turn to claim rather than whoever joined first — and
+   * keeps something rotation could not: a running order the room can see and
+   * count their own turn down against. That readability is worth more here than
+   * evening out an opening slot nobody was tracking anyway.
    */
   takeNextDrawer(present: readonly string[]): string | null {
     const seated = new Set(present);
     for (let step = 0; step < this.order.length; step++) {
-      const candidate = this.order[this.seatAt(this.cursor + step)];
+      const candidate = this.order[(this.cursor + step) % this.order.length];
       if (candidate !== undefined && seated.has(candidate)) {
-        this.cursor += step + 1;
+        this.cursor = (this.cursor + step + 1) % this.order.length;
         return candidate;
       }
     }

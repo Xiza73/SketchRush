@@ -259,6 +259,13 @@ export interface TurnInfo {
 }
 
 export interface TurnState extends TurnInfo {
+  /**
+   * Who draws, in the order they will. Shuffled once when the game starts and
+   * fixed for the rest of it, so the panel can show the whole running order and
+   * everybody can see their own turn coming. Seats that leave stay in the list:
+   * they are skipped when their turn arrives, not removed from it.
+   */
+  order: string[];
   /** The answer. Only ever addressed to the drawer; `null` for everybody else. */
   word: string | null;
   /** Everything drawn so far this turn, so a reload repaints it. */
@@ -459,6 +466,23 @@ export interface ChatMessagePayload {
   text: string;
 }
 
+/**
+ * A guess that missed, addressed to the drawer alone.
+ *
+ * The drawer is the only person in the turn with nothing to type, and in a `box`
+ * room they watch the whole thing in silence with no idea whether the drawing is
+ * nearly working. This tells them that somebody tried and how near they got —
+ * never **what** they typed, which is the promise a `box` room makes to the
+ * people guessing and is not the drawer's to break.
+ *
+ * A `chat` room does not emit it: there the drawer already reads every attempt,
+ * which is strictly more than this says.
+ */
+export interface GuessAttemptPayload {
+  playerId: string;
+  close: boolean;
+}
+
 export interface HintPayload {
   /** Same shape as `TurnInfo.masked`, with one more letter filled in. */
   masked: (string | null)[];
@@ -490,6 +514,8 @@ export interface ServerToClientEvents {
   'draw:clear': () => void;
   'player:guessed': (payload: GuessedPayload) => void;
   'chat:message': (payload: ChatMessagePayload) => void;
+  /** Drawer only, `box` rooms only. */
+  'guess:attempt': (payload: GuessAttemptPayload) => void;
   'player:left': (payload: PlayerLeftPayload) => void;
   'game:end': (payload: GameEndPayload) => void;
   'reaction:show': (payload: { playerId: string; emote: Emote }) => void;
