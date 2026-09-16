@@ -1,13 +1,13 @@
 import { cn } from '@/shared/lib/cn';
 
-export interface SegmentedOption<T extends string | number> {
+export interface SegmentedOption<T extends string | number | boolean> {
   value: T;
   label: string;
   /** Optional accessible label when the visible label is terse (e.g. "ES"). */
   ariaLabel?: string;
 }
 
-interface SegmentedProps<T extends string | number> {
+interface SegmentedProps<T extends string | number | boolean> {
   options: readonly SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
@@ -18,7 +18,7 @@ interface SegmentedProps<T extends string | number> {
 }
 
 /** Segmented control from CreateRoom.dc.html (`.seg` / `.seg-on`). */
-export const Segmented = <T extends string | number>({
+export const Segmented = <T extends string | number | boolean>({
   options,
   value,
   onChange,

@@ -20,7 +20,7 @@ const BASE: RoomSettings = {
   drawSeconds: 90,
   rounds: 3,
   capacity: 8,
-  hintLetters: 1,
+  hints: true,
   guessMode: 'box' as const,
 };
 
@@ -56,7 +56,7 @@ describe('UpdateRoomSettingsUseCase', () => {
       drawSeconds: 60,
       rounds: 5,
       capacity: 3,
-      hintLetters: 0,
+      hints: false,
       guessMode: 'box' as const,
     });
 
@@ -65,7 +65,7 @@ describe('UpdateRoomSettingsUseCase', () => {
       drawSeconds: 60,
       rounds: 5,
       capacity: 3,
-      hintLetters: 0,
+      hints: false,
       guessMode: 'box' as const,
     });
     expect(events).toHaveLength(1);

@@ -3,7 +3,7 @@ import { Turn } from './turn.entity';
 const T0 = 1_000_000;
 
 const turn = (over: Partial<ConstructorParameters<typeof Turn>[0]> = {}) =>
-  new Turn({ turn: 1, round: 1, drawerId: 'elena', drawSeconds: 60, hintLetters: 0, ...over });
+  new Turn({ turn: 1, round: 1, drawerId: 'elena', drawSeconds: 60, hints: false, ...over });
 
 describe('Turn · the clock', () => {
   it('is worth nothing until the drawer has picked', () => {
@@ -90,33 +90,75 @@ describe('Turn · guesses', () => {
 
 describe('Turn · hints', () => {
   it('releases nothing when the room turned them off', () => {
-    const t = turn({ hintLetters: 0 });
+    const t = turn({ hints: false });
     t.begin('castillo', T0);
     expect(t.releaseDueHints(T0 + 59_000)).toBe(false);
     expect(t.masked().every((c) => c === null)).toBe(true);
   });
 
+  // `castillo` is eight letters, so two hints, at 20 s and 40 s of the 60.
   it('holds a hint until its moment, then lets exactly one out', () => {
-    const t = turn({ hintLetters: 1 });
+    const t = turn({ hints: true });
     t.begin('castillo', T0);
-    expect(t.releaseDueHints(T0 + 29_000)).toBe(false);
-    expect(t.releaseDueHints(T0 + 31_000)).toBe(true);
+    expect(t.releaseDueHints(T0 + 19_000)).toBe(false);
+    expect(t.releaseDueHints(T0 + 21_000)).toBe(true);
     expect(t.revealed).toHaveLength(1);
   });
 
   it('catches up on every hint that came due while nobody was looking', () => {
-    const t = turn({ hintLetters: 2 });
+    const t = turn({ hints: true });
     t.begin('castillo', T0);
     // One tick arriving late must not swallow the hint it slept through.
-    expect(t.releaseDueHints(T0 + 55_000)).toBe(true);
+    expect(t.releaseDueHints(T0 + 45_000)).toBe(true);
     expect(t.revealed).toHaveLength(2);
   });
 
-  it('never reveals the same position twice', () => {
-    const t = turn({ hintLetters: 2 });
+  it('spends the whole word and stops, however long the turn runs', () => {
+    const t = turn({ hints: true });
     t.begin('sol', T0);
     t.releaseDueHints(T0 + 59_000);
+    // Three letters buy exactly one hint; the rest of the turn buys nothing.
+    expect(t.revealed).toHaveLength(1);
+    expect(t.releaseDueHints(T0 + 59_500)).toBe(false);
+  });
+
+  it('gives a longer word more to go on', () => {
+    const short = turn({ hints: true });
+    short.begin('sol', T0);
+    short.releaseDueHints(T0 + 59_000);
+
+    const long = turn({ hints: true });
+    long.begin('refrigerador', T0);
+    long.releaseDueHints(T0 + 59_000);
+
+    expect(short.revealed).toHaveLength(1);
+    expect(long.revealed).toHaveLength(4);
+  });
+
+  it('never reveals the same position twice', () => {
+    const t = turn({ hints: true });
+    t.begin('refrigerador', T0);
+    t.releaseDueHints(T0 + 59_000);
     expect(new Set(t.revealed).size).toBe(t.revealed.length);
+  });
+
+  it('brings the next hint forward as the room fills in', () => {
+    const t = turn({ hints: true });
+    t.begin('castillo', T0);
+    // 12 s is nowhere near the 20 s the schedule parked the first hint at...
+    expect(t.releaseDueHints(T0 + 12_000)).toBe(false);
+    // ...but with half the room already home, the wait halves and it is due.
+    expect(t.releaseDueHints(T0 + 12_000, 0.5)).toBe(true);
+  });
+
+  it('measures the share against the guessers, never the drawer', () => {
+    const t = turn({ hints: true });
+    t.begin('castillo', T0);
+    const seats = ['elena', 'bruno', 'ana'];
+    expect(t.guessedShare(seats)).toBe(0);
+    t.recordGuess('bruno', T0 + 1000);
+    // elena is drawing: one of the two who could guess, has.
+    expect(t.guessedShare(seats)).toBe(0.5);
   });
 });
 

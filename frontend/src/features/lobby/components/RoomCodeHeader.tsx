@@ -104,7 +104,7 @@ export const RoomCodeHeader = ({
             onClick={edit}
             title={isHost ? t.lobby.changeRules : undefined}
           />
-          {settings.hintLetters === 0 ? (
+          {!settings.hints ? (
             <Chip
               value={t.lobby.hintOff}
               muted

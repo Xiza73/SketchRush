@@ -137,22 +137,24 @@ export const CreateRoomForm = ({
       </span>
     </div>
 
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-yellow-line bg-yellow-soft px-4 py-3.5">
-      <div className="flex items-center gap-2.5 text-yellow-deep">
-        <HintIcon size={18} />
-        <span className="text-sm font-semibold">{t.home.hintLetters}</span>
+    <div className="rounded-xl border border-yellow-line bg-yellow-soft px-4 py-3.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 text-yellow-deep">
+          <HintIcon size={18} />
+          <span className="text-sm font-semibold">{t.home.hints}</span>
+        </div>
+        <Segmented<boolean>
+          size="sm"
+          label={t.home.hints}
+          value={values.hints}
+          onChange={(hints) => onChange({ hints })}
+          options={[
+            { value: true, label: t.home.hintsOn },
+            { value: false, label: t.home.hintsOff },
+          ]}
+        />
       </div>
-      <Segmented<number>
-        mono
-        size="sm"
-        label={t.home.hintLetters}
-        value={values.hintLetters}
-        onChange={(hintLetters) => onChange({ hintLetters })}
-        options={ROOM_LIMITS.hintLettersOptions.map((n) => ({
-          value: n,
-          label: n === 0 ? t.home.hintNone : String(n),
-        }))}
-      />
+      {values.hints && <p className="m-0 mt-2.5 text-xs text-ink-3">{t.home.hintsNote}</p>}
     </div>
 
     <p className="m-0 text-xs text-ink-3">{t.home.sessionLength(sessionMinutes(values))}</p>

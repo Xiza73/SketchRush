@@ -18,7 +18,7 @@ const settings = {
   drawSeconds: 60,
   rounds: 3,
   capacity: 8,
-  hintLetters: 0,
+  hints: false,
   guessMode: 'box' as const,
 };
 

@@ -1,5 +1,11 @@
 import type { DrawOp, Point, StrokeTool, WordChoice } from '@shared/contract';
-import { hintCandidates, hintSchedule, maskWord } from '../services/word-mask';
+import {
+  hintCandidates,
+  hintCount,
+  hintDueAt,
+  hintSchedule,
+  maskWord,
+} from '../services/word-mask';
 
 export type TurnPhase = 'choosing' | 'drawing' | 'ended';
 
@@ -24,7 +30,7 @@ export interface TurnProps {
   round: number;
   drawerId: string;
   drawSeconds: number;
-  hintLetters: number;
+  hints: boolean;
 }
 
 /**
@@ -40,7 +46,7 @@ export class Turn {
   readonly round: number;
   readonly drawerId: string;
   readonly drawSeconds: number;
-  readonly hintLetters: number;
+  readonly hints: boolean;
 
   phase: TurnPhase = 'choosing';
   /** The three options offered, each from its own category; drawer only. */
@@ -53,7 +59,13 @@ export class Turn {
   deadlineAt = 0;
   /** Character positions already revealed as hints. */
   readonly revealed: number[] = [];
-  /** Epoch ms each remaining hint is due, soonest first. */
+  /**
+   * Seconds from the start at which each remaining hint is due, soonest first.
+   *
+   * Offsets rather than epochs because the moment is not fixed when drawing
+   * begins: it moves forward as the room guesses, so it has to be recomputed
+   * against the room every time it is asked, not baked in once.
+   */
   private pendingHints: number[] = [];
   readonly canvas: DrawOp[] = [];
   private nextOpId = 1;
@@ -66,7 +78,7 @@ export class Turn {
     this.round = props.round;
     this.drawerId = props.drawerId;
     this.drawSeconds = props.drawSeconds;
-    this.hintLetters = props.hintLetters;
+    this.hints = props.hints;
   }
 
   offer(choices: WordChoice[], now: number, chooseSeconds: number): void {
@@ -80,9 +92,8 @@ export class Turn {
     this.phase = 'drawing';
     this.startedAt = now;
     this.deadlineAt = now + this.drawSeconds * 1000;
-    this.pendingHints = hintSchedule(this.hintLetters, this.drawSeconds).map(
-      (seconds) => now + seconds * 1000,
-    );
+    // The word decides how many; the room decides when.
+    this.pendingHints = this.hints ? hintSchedule(hintCount(word), this.drawSeconds) : [];
   }
 
   end(): void {
@@ -136,14 +147,33 @@ export class Turn {
   }
 
   /**
+   * How much of the room already has the word. The drawer is not counted on
+   * either side of the fraction: they are not waiting on a hint and they were
+   * never going to guess.
+   */
+  guessedShare(seatedIds: readonly string[]): number {
+    const guessers = seatedIds.filter((id) => id !== this.drawerId);
+    if (guessers.length === 0) return 0;
+    return guessers.filter((id) => this.hasGuessed(id)).length / guessers.length;
+  }
+
+  /**
    * Reveals one letter per hint whose moment has passed, and reports whether
    * anything changed. Falling behind (a slow tick, a paused process) releases
    * every hint that came due rather than dropping them.
+   *
+   * The moment is read fresh against `guessedShare` every pass, so a hint the
+   * schedule had parked at sixty seconds can come due at twenty once most of
+   * the room is home.
    */
-  releaseDueHints(now: number): boolean {
+  releaseDueHints(now: number, guessedShare = 0): boolean {
     if (this.phase !== 'drawing' || !this.word) return false;
+    const elapsed = (now - this.startedAt) / 1000;
     let changed = false;
-    while (this.pendingHints.length > 0 && (this.pendingHints[0] ?? Infinity) <= now) {
+    while (
+      this.pendingHints.length > 0 &&
+      hintDueAt(this.pendingHints[0] ?? Infinity, guessedShare) <= elapsed
+    ) {
       this.pendingHints.shift();
       const candidates = hintCandidates(this.word, this.revealed);
       if (candidates.length === 0) break;

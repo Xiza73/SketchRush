@@ -11,7 +11,7 @@ export interface CreateRoomForm {
   rounds: number;
   capacity: number;
   guessMode: GuessMode;
-  hintLetters: number;
+  hints: boolean;
 }
 
 export const toCreateRoomRequest = (form: CreateRoomForm): CreateRoomRequest => ({
@@ -22,6 +22,6 @@ export const toCreateRoomRequest = (form: CreateRoomForm): CreateRoomRequest => 
     rounds: form.rounds,
     capacity: form.capacity,
     guessMode: form.guessMode,
-    hintLetters: form.hintLetters,
+    hints: form.hints,
   },
 });

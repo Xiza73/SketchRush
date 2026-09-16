@@ -12,6 +12,6 @@ export const toUpdateSettingsRequest = (form: RoomSettingsForm): UpdateSettingsR
     rounds: form.rounds,
     capacity: form.capacity,
     guessMode: form.guessMode,
-    hintLetters: form.hintLetters,
+    hints: form.hints,
   },
 });

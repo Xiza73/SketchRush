@@ -59,7 +59,7 @@ export class TurnLifecycleService {
       round: game.round,
       drawerId,
       drawSeconds: room.settings.drawSeconds,
-      hintLetters: room.settings.hintLetters,
+      hints: room.settings.hints,
     });
     turn.offer(
       this.words.pick(room.settings.language, ROOM_LIMITS.wordChoices, game.usedWords),

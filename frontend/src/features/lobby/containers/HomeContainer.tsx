@@ -20,7 +20,7 @@ const defaultValues = (name: string, uiLang: 'es' | 'en'): CreateRoomFormValues 
   rounds: 3,
   capacity: ROOM_LIMITS.maxPlayers,
   guessMode: 'box',
-  hintLetters: 1,
+  hints: true,
 });
 
 /** Owns the create/join forms; the name is shared by both actions. */

@@ -22,7 +22,7 @@ const SETTINGS: RoomSettings = {
   drawSeconds: 120,
   rounds: 3,
   capacity: 5,
-  hintLetters: 0,
+  hints: false,
   guessMode: 'box' as const,
 };
 

@@ -3,22 +3,50 @@ import { editDistance, normalizeWord } from '@modules/words/domain/services/norm
 export type GuessVerdict = 'correct' | 'close' | 'wrong';
 
 /**
- * How near a near miss has to be before it is worth telling somebody about.
+ * How many edits away still counts as a near miss, by the length of the answer.
  *
- * One edit apart is the obvious rule and it is wrong on short words: `gato` and
- * `pato` are two different answers, not a typo, and saying "close" there hands
- * out the answer. Past five letters a single edit really is a slip.
+ * One edit is the obvious rule and it is wrong on short words: `gato` and `pato`
+ * are two different answers, not a typo, and calling that close hands out the
+ * answer. Measured against the bank, 328 of the 459 English pairs that sit one
+ * edit apart involve a word under five letters — `run`/`nun`/`bun`/`sun`,
+ * `jog`/`dog`/`jug`/`fog`. Short words stay silent for a reason.
  *
- * docs/context/04 lists this as open; five is the starting point, not a result.
+ * Long words are the opposite: among the 247 Spanish and 181 English answers of
+ * nine letters or more, only ten and one pair respectively sit within two edits.
+ * At that length two slips are a slip, not a different word.
  */
-const MIN_LENGTH_FOR_CLOSE = 5;
+const editBudget = (length: number): number => (length >= 9 ? 2 : length >= 5 ? 1 : 0);
+
+/**
+ * A plural typed for a singular, or the other way round.
+ *
+ * This is the near miss players actually hit, and the length rule above throws
+ * it away on exactly the short words where it is most obvious — `gato` for
+ * `gatos` is not a guess at a different animal. It is safe where a bare edit is
+ * not, because it says "the right idea, wrong ending" rather than "the answer
+ * is one letter from what you typed".
+ *
+ * The stem has to survive the strip with something left: without the floor,
+ * `mes` reduces to `m` and starts matching things it has nothing to do with.
+ */
+const MIN_STEM = 3;
+
+const stem = (word: string): string => {
+  const shorter = word.replace(/(es|s)$/, '');
+  return shorter.length >= MIN_STEM ? shorter : word;
+};
 
 export const judgeGuess = (guess: string, answer: string): GuessVerdict => {
   const said = normalizeWord(guess);
   const target = normalizeWord(answer);
   if (said.length === 0) return 'wrong';
   if (said === target) return 'correct';
-  if (target.length >= MIN_LENGTH_FOR_CLOSE && editDistance(said, target) === 1) return 'close';
+
+  // The answer's length sets the budget, not the guess's: otherwise typing a
+  // long word at a short answer would buy tolerance the answer never had.
+  const budget = editBudget(target.length);
+  if (budget > 0 && editDistance(said, target, budget) <= budget) return 'close';
+  if (said !== target && stem(said) === stem(target)) return 'close';
   return 'wrong';
 };
 

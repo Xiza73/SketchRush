@@ -47,7 +47,7 @@ describe('RejoinRoomUseCase', () => {
         drawSeconds: 60,
         rounds: 3,
         capacity: 8,
-        hintLetters: 1,
+        hints: true,
         guessMode: 'box' as const,
       },
       T0,

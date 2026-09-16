@@ -132,8 +132,13 @@ export const ROOM_LIMITS = {
   roundsOptions: [1, 2, 3, 5] as const,
   minRounds: 1,
   maxRounds: 5,
-  hintLettersOptions: [0, 1, 2] as const,
-  maxHintLetters: 2,
+  /**
+   * At most a third of a word's letters ever come out as hints, and the count
+   * follows the word: a four-letter answer gets one, a twelve-letter answer
+   * four. Revealing more than a third stops being a hint and starts being the
+   * answer.
+   */
+  hintLetterShare: 3,
   nameMinLength: 1,
   nameMaxLength: 16,
   /** How many words the drawer chooses between, and how long they have. */
@@ -203,8 +208,12 @@ export interface RoomSettings {
   rounds: number;
   capacity: number;
   guessMode: GuessMode;
-  /** How many letters of the word are revealed as the turn runs. */
-  hintLetters: number;
+  /**
+   * Whether letters come out as the turn runs. How many, and when, is the
+   * turn's business: it follows the word's length, the time elapsed and how
+   * much of the room has already guessed.
+   */
+  hints: boolean;
 }
 
 export interface PlayerPublic {

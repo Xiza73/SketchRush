@@ -1,4 +1,4 @@
-import { IsIn, IsInt, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, Max, Min } from 'class-validator';
 import { ROOM_LIMITS, type GuessMode, type Language, type RoomSettings } from '@shared/contract';
 
 export class RoomSettingsDto implements RoomSettings {
@@ -24,8 +24,7 @@ export class RoomSettingsDto implements RoomSettings {
   @IsIn(['box', 'chat'])
   guessMode!: GuessMode;
 
-  @IsInt()
-  @Min(0)
-  @Max(ROOM_LIMITS.maxHintLetters)
-  hintLetters!: number;
+  /** Whether letters come out as the turn runs; how many is the turn's business. */
+  @IsBoolean()
+  hints!: boolean;
 }

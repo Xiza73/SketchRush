@@ -13,7 +13,7 @@ as WordRush does.
 | Rounds | 1 / 2 / 3 / 5 | A round is one full rotation: **everybody draws once**. |
 | Capacity | 2 – 10 | More people is better here than in WordRush. |
 | Guess channel | **box** / **chat** | See below. This is the setting that makes the room. |
-| Hints | 0 / 1 / 2 letters | Revealed progressively through the turn. |
+| Hints | on / off | On, letters come out through the turn. How many and when is derived from the word and the room, not configured — see below. |
 
 **The lobby shows the length this adds up to** — `rounds × players × (drawTime +
 reveal)` — because 5 rounds of 10 players at 100 s is over an hour and nobody
@@ -38,9 +38,13 @@ Everything else in this document is identical in both modes.
 
 ## Turn
 
-1. **The drawer** is the next player in the rotation. The order is fixed when the
-   game starts and does not change if somebody leaves mid-game; a missing player
-   is skipped.
+1. **The drawer** is the next player in the rotation. The seats are fixed when
+   the game starts, and the order **shifts one seat every round**: seats A, B, C
+   draw A B C, then B C A, then C A B. Everybody still draws exactly once per
+   round — what moves around is who opens a round and who gets the last word of
+   the game, neither of which should belong to the same player every time. The
+   cost is that the gap between a player's own turns stops being constant. A
+   player who leaves mid-game is skipped and their seat is not refilled.
 2. **Word choice.** The drawer is offered **three words, each from a different
    category**, and has 10 s to pick. No pick, and the first is taken
    automatically. Nobody else sees the options — or the categories.
@@ -88,13 +92,42 @@ Only the drawer can draw. The server refuses a stroke from anybody else
 
 ## Hints
 
-With hints set to 1 or 2, that many letters of the blanked word are revealed at
-even intervals through the turn — at 1/2 of the time for one letter, at 1/3 and
-2/3 for two. Revealed letters are never the same position twice, and the room
-sees the same hint at the same moment.
+Hints are a switch, not a number. **How many** and **when** are derived from the
+turn itself, because one setting cannot serve both `sol` and `refrigerador` —
+a letter is most of the first and nothing at all of the second.
 
-Hints cost the guessers nothing directly. They do not need to: a hint only
-arrives late in the turn, and a late guess is already worth less.
+- **How many**: a third of the word's letters, rounded down. `sol` and `gato`
+  get one, `castillo` two, `refrigerador` four. Spaces are already visible and
+  earn nothing. Past a third it stops being a hint and starts being the answer.
+- **When**: spread evenly, never at the very end — one hint at half time, two at
+  a third and two thirds. A hint with four seconds left is a formality.
+- **How the room moves it**: every pending hint comes forward in proportion to
+  how many of the guessers already have the word. Half the room home halves the
+  remaining wait; everybody but one home makes it almost immediate. Hints are for
+  whoever is still stuck, and the more the board fills in around them, the less
+  the original timetable was ever about them.
+
+Revealed letters are never the same position twice, and the room sees the same
+hint at the same moment. Hints cost the guessers nothing directly — they do not
+need to, because a hint only lands once the clock has already eaten the score.
+
+## Near misses
+
+A guess that is not the word can still come back as **close**. The player is told
+only that, never how far off they were: the wording is deliberately vague,
+because "one letter off" is itself a hint the room never agreed to give.
+
+What earns it, measured against the actual bank:
+
+| Answer | Tolerance | Why |
+|---|---|---|
+| Under 5 letters | none | `gato`/`pato`, `run`/`nun`/`bun`/`sun`. 328 of the 459 English bank pairs that sit one edit apart involve a short word — calling those close hands over the answer. |
+| 5–8 letters | 1 edit | `castilo` for `castillo` is a slip, not a different guess. |
+| 9+ letters | 2 edits | Among the 247 ES and 181 EN answers this long, only 10 and 1 pair respectively sit within two edits. |
+| Any length | a plural | `gatos` for `gato` is not a guess at a different animal. This is the near miss players actually hit, and the length rule throws it away on exactly the short words where it is most obvious. |
+
+The budget is read off the **answer**, never the guess: otherwise typing a long
+word at a short answer would buy tolerance the answer never had.
 
 ## Reactions
 

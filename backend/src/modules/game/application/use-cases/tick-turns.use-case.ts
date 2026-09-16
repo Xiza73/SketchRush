@@ -67,7 +67,8 @@ export class TickTurnsUseCase {
     }
 
     if (turn?.phase === 'drawing') {
-      if (turn.releaseDueHints(now)) {
+      const share = turn.guessedShare(room.connectedPlayers().map((player) => player.id));
+      if (turn.releaseDueHints(now, share)) {
         this.bus.publish({
           roomCode: room.code,
           event: 'turn:hint',
