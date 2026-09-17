@@ -67,6 +67,13 @@ const STROKE_LIMIT: RateLimit = { max: 60, windowMs: 1_000 };
 export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GameGateway.name);
   private unsubscribe: (() => void) | null = null;
+  /**
+   * When each live socket opened, and why it closed. Both are keyed by socket
+   * id and deleted on disconnect, so they hold one entry per open connection
+   * and nothing else — the room cap bounds how many that can be.
+   */
+  private readonly openedAt = new Map<string, number>();
+  private readonly lastReason = new Map<string, string>();
 
   @WebSocketServer()
   private readonly server!: GameServer;
@@ -100,17 +107,44 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   handleConnection(client: GameSocket): void {
-    this.logger.debug?.(`Socket connected ${client.id}`);
+    this.openedAt.set(client.id, this.clock.now());
+    // Nest's `handleDisconnect` is not told *why* the socket went, and why is
+    // the only interesting part: `ping timeout` is a network that stopped
+    // answering, `transport close` is a tab backgrounded or a phone asleep,
+    // `client namespace disconnect` is the player leaving on purpose. Without
+    // it every complaint about "it disconnected me" is unfalsifiable.
+    client.on('disconnect', (reason: string) => {
+      this.lastReason.set(client.id, reason);
+    });
+    this.logger.log(
+      `socket open ${client.id} transport=${client.conn.transport.name} ip=${client.handshake.address}`,
+    );
   }
 
   handleDisconnect(client: GameSocket): void {
+    const openedAt = this.openedAt.get(client.id);
+    const lived =
+      openedAt === undefined ? '?' : `${Math.round((this.clock.now() - openedAt) / 1000)}s`;
+    const reason = this.lastReason.get(client.id) ?? 'unknown';
+    this.openedAt.delete(client.id);
+    this.lastReason.delete(client.id);
     this.limiter.forget(client.id);
-    if (!this.sessions.isCurrent(client)) {
+
+    const session = this.sessions.isCurrent(client) ? this.sessions.detach(client) : null;
+    if (!session) {
       this.sessions.detach(client);
+      // A socket with no seat: never joined, or already replaced by a newer one
+      // from the same player. Worth a line, because a storm of these is a
+      // client reconnecting in a loop rather than players coming and going.
+      this.logger.log(`socket close ${client.id} reason=${reason} lived=${lived} seat=none`);
       return;
     }
-    const session = this.sessions.detach(client);
-    if (session) this.markDisconnected.execute(session.roomCode, session.playerId);
+
+    this.logger.log(
+      `socket close ${client.id} reason=${reason} lived=${lived} ` +
+        `room=${session.roomCode} player=${session.playerId}`,
+    );
+    this.markDisconnected.execute(session.roomCode, session.playerId);
   }
 
   // ----------------------------------------------------------------- clock
@@ -159,11 +193,21 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     @ConnectedSocket() client: GameSocket,
     @MessageBody() dto: RejoinRoomDto,
   ): Ack<SessionAck> {
-    const session = this.rejoinRoom.execute(dto);
-    if (client.data.playerId && client.data.playerId !== session.player.id) {
-      this.leaveCurrentRoom(client);
+    // Both outcomes are logged. A player who cannot get back into a room they
+    // were in is the worst thing this server can do to them, and the refusal
+    // carries the reason the client will only ever show as a toast.
+    try {
+      const session = this.rejoinRoom.execute(dto);
+      if (client.data.playerId && client.data.playerId !== session.player.id) {
+        this.leaveCurrentRoom(client);
+      }
+      this.logger.log(`rejoin ok ${client.id} room=${dto.roomCode} player=${session.player.id}`);
+      return this.bindSession(client, session);
+    } catch (error: unknown) {
+      const code = error instanceof DomainException ? error.code : 'internal';
+      this.logger.warn(`rejoin REFUSED ${client.id} room=${dto.roomCode} code=${code}`);
+      throw error;
     }
-    return this.bindSession(client, session);
   }
 
   @SubscribeMessage('room:leave')

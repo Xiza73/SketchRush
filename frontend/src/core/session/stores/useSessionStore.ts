@@ -91,6 +91,43 @@ interface SessionActions {
 let bound = false;
 let rejoinInFlight: Promise<FullState | null> | null = null;
 
+/**
+ * Backing off after a rejoin that never got an answer.
+ *
+ * `socket.io` retries the *connection* on its own, but a socket that is already
+ * connected and simply did not get its ack back raises no further `connect`
+ * event, so nothing would ever try again. This is that missing retry: a few
+ * attempts, backing off, and then it stops and leaves the screen saying it is
+ * disconnected. The session survives all of it — only the server may end it.
+ */
+const REJOIN_RETRIES = 4;
+const REJOIN_BACKOFF_MS = [1_000, 2_000, 4_000, 8_000];
+
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+// Full from the start, not from the first `connect`: the rejoin that restores a
+// reloaded page runs before any connect handler has had a say, and that is
+// precisely the one a player notices failing.
+let retriesLeft = REJOIN_RETRIES;
+
+type GetState = () => SessionState & SessionActions;
+
+const scheduleRejoinRetry = (get: GetState): void => {
+  if (retryTimer !== null) return;
+  if (retriesLeft <= 0) return;
+  const attempt = REJOIN_RETRIES - retriesLeft;
+  retriesLeft -= 1;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    if (get().session) void get().rejoin({ quiet: true });
+  }, REJOIN_BACKOFF_MS[attempt] ?? 8_000);
+};
+
+const resetRejoinRetries = (): void => {
+  if (retryTimer !== null) clearTimeout(retryTimer);
+  retryTimer = null;
+  retriesLeft = REJOIN_RETRIES;
+};
+
 export const useSessionStore = create<SessionState & SessionActions>((set, get) => ({
   session: readSession(),
   connection: 'idle',
@@ -105,6 +142,9 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
     socket.on('connect', () => {
       set({ connection: 'connected' });
+      // A fresh socket earns a fresh budget: whatever exhausted the last one
+      // was about the connection that just died, not this one.
+      resetRejoinRetries();
       // Before anything reads a deadline: this machine's clock is not the one
       // the deadlines were written against, and it can be seconds out.
       void syncServerClock();
@@ -163,6 +203,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
       ensureConnected();
       const result = await rejoinRoom(session);
       if (result.ok) {
+        resetRejoinRetries();
         // Coming back to a game that already ended is a dead session, not a seat.
         if (initial && result.value.state.lobby.status === 'finished') {
           get().clearSession({ expired: !quiet });
@@ -171,10 +212,25 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
         get().applyAck(result.value, session.name);
         return result.value.state;
       }
-      const timedOut = result.error.message === 'timeout';
-      // A session that cannot be restored must never trap the user on a
+      // A timeout is not an answer.
+      //
+      // It used to be treated as one, and it threw the session away: a slow
+      // mobile network or a busy server on the reconnect after a backgrounded
+      // tab was enough to delete the token and put a player out of a game they
+      // were still legitimately in, with no way back. The server never said the
+      // seat was gone — it said nothing, which is the one case where keeping
+      // what we have is obviously right.
+      //
+      // So: hold the session, tell the screen the connection is unhappy, and
+      // try again. A seat that really has gone answers with a code below.
+      if (result.error.message === 'timeout') {
+        set({ connection: 'disconnected' });
+        scheduleRejoinRetry(get);
+        return null;
+      }
+      // A session the server *has* refused must never trap the user on a
       // guarded route: drop it and say so on the home page.
-      if (EXPIRED_CODES.has(result.error.code) || timedOut) {
+      if (EXPIRED_CODES.has(result.error.code)) {
         get().clearSession({ expired: !quiet });
         return null;
       }
