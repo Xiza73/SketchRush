@@ -7,6 +7,7 @@ import {
   IRoomRepository,
   ROOM_REPOSITORY,
 } from '@modules/rooms/domain/interfaces/room-repository.interface';
+import { ISynonyms, SYNONYMS } from '@modules/words/domain/interfaces/synonyms.interface';
 import {
   GAME_REPOSITORY,
   IGameRepository,
@@ -28,6 +29,7 @@ export class SubmitGuessUseCase {
     @Inject(ROOM_REPOSITORY) private readonly rooms: IRoomRepository,
     @Inject(GAME_REPOSITORY) private readonly games: IGameRepository,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(SYNONYMS) private readonly synonyms: ISynonyms,
     private readonly bus: RoomEventsBus,
     private readonly lifecycle: TurnLifecycleService,
   ) {}
@@ -42,13 +44,24 @@ export class SubmitGuessUseCase {
     if (turn.hasGuessed(playerId)) throw new DomainException('already_guessed');
 
     const now = this.clock.now();
-    const verdict = judgeGuess(text, turn.word ?? '');
+    const answer = turn.word ?? '';
+
+    // Spelling is asked first and a regional variant only ever rescues a guess
+    // that spelling already gave up on. The order matters where both could
+    // apply: `torta` at `tarta` is one letter out *and* the same cake, and
+    // "close" is the better thing to tell them — it points at a letter to fix,
+    // where "another word entirely" would send them looking for a word they
+    // have essentially already typed.
+    let verdict = judgeGuess(text, answer);
+    if (verdict === 'wrong' && this.synonyms.areSame(room.settings.language, text, answer)) {
+      verdict = 'synonym';
+    }
 
     if (verdict !== 'correct') {
       if (room.settings.guessMode === 'chat') {
         // A chat room repeats what was typed — unless it gives the word away,
         // which someone who already knows it could do by accident or on purpose.
-        if (!revealsAnswer(text, turn.word ?? '')) {
+        if (!revealsAnswer(text, answer)) {
           this.bus.publish({
             roomCode: room.code,
             event: 'chat:message',
@@ -60,14 +73,18 @@ export class SubmitGuessUseCase {
         // they got. They have nothing to type and no other way to know whether
         // the drawing is working; the text itself stays private, which is the
         // whole promise a box room makes to the people guessing.
+        //
+        // `synonym` is the strongest of these signals and costs nothing to
+        // pass on: somebody has named the thing on the canvas exactly, in
+        // another country's word. The drawing is working.
         this.bus.publish({
           roomCode: room.code,
           event: 'guess:attempt',
-          payload: { playerId, close: verdict === 'close' },
+          payload: { playerId, verdict },
           toPlayerId: turn.drawerId,
         });
       }
-      return { correct: false, close: verdict === 'close', position: null, points: 0 };
+      return { verdict, position: null, points: 0 };
     }
 
     const record = turn.recordGuess(playerId, now);
@@ -84,6 +101,6 @@ export class SubmitGuessUseCase {
       this.lifecycle.endTurn(game, room, now);
     }
 
-    return { correct: true, close: false, position: record.position, points };
+    return { verdict, position: record.position, points };
   }
 }

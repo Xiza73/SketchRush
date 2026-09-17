@@ -116,9 +116,12 @@ Only the drawer can draw. The server refuses a stroke from anybody else
   stores the natural spelling, because the reveal shows it.
 - **A near miss is told to the guesser**, and only ever as "close" — never how
   far off. See [Near misses](#near-misses) for what earns it.
+- **A regional variant is told apart from a near miss**, because the two ask for
+  opposite next moves. See [Regional variants](#regional-variants).
 - **The drawer cannot guess**, and cannot type the word: a guess containing the
   answer is dropped from a chat-mode room rather than broadcast.
-- **The drawer alone is told that somebody missed, and whether they were close.**
+- **The drawer alone is told that somebody missed, and how near they got** —
+  close, or the right thing under another word.
   Only in a **box** room, only to the drawer, and never the text that was typed.
   They have nothing to type for the whole turn and otherwise sit watching silence
   with no idea whether the drawing is working; this gives them the one signal
@@ -166,6 +169,39 @@ What earns it, measured against the actual bank:
 
 The budget is read off the **answer**, never the guess: otherwise typing a long
 word at a short answer would buy tolerance the answer never had.
+
+## Regional variants
+
+`vereda` at `acera`, `palta` at `aguacate`, `biscuit` at `cookie`. The player has
+named the thing on the canvas exactly. They just come from somewhere that calls
+it something else.
+
+**It does not score.** The mask is a promise about letter count and `palta`
+does not fill eight blanks. That rule does not bend.
+
+**It is not a near miss either**, and this is the whole point of the feature.
+A near miss says *fix a letter*; a variant says *find the other word*. Told the
+wrong one, a player hunts a typo that is not there — five letters against eight,
+and nothing to correct. So it comes back as its own verdict, and the room's feed
+tells the drawer the same: somebody said it another way.
+
+Where both could apply, **close wins**. `torta` at `tarta` is one letter out and
+the same cake; pointing at the letter is the more useful of the two, and calling
+it "another word entirely" would send somebody looking for a word they have
+essentially already typed.
+
+The pairs live in `backend/src/modules/words/data/<lang>/synonyms.json` as
+**groups of equals**, not canonical-and-variants: the relation is symmetric, and
+the bank holds more than one side of some of them — `pastel`, `tarta` and
+`bizcocho` are all words this game asks you to draw. A canonical map would write
+that fact twice, in rows free to disagree.
+
+Boot refuses a group with a word in two groups, and refuses **a group no word of
+which is in the bank**. That last one is not hypothetical: a group only fires
+when the *answer* is one of its words, and the first English draft had eleven
+rows — `petrol`/`gasoline`, `nappy`/`diaper`, `queue`/`line` — that were all
+real pairs of words and not one of them a word this game can ask for. They read
+perfectly and would have shipped dead.
 
 ## Reactions
 
@@ -244,3 +280,7 @@ picked to be drawable, which is not true of theirs.
 letter count, so accepting a regional synonym of a different length would
 contradict it: `durazno` shows seven blanks, and only `durazno` fills them.
 Accents and case are still ignored — those do not change the count.
+
+`melocotón` at `durazno` still gets an answer, though. It scores nothing and
+fills no blanks, but the player is told they have the right thing under the
+wrong word rather than left to wonder — see [Regional variants](#regional-variants).

@@ -1,4 +1,4 @@
-import type { DrawOp, PlayerTurnState, TurnState } from '@/shared/contract';
+import type { DrawOp, GuessVerdict, PlayerTurnState, TurnState } from '@/shared/contract';
 
 /**
  * One line in the room feed. Both guess modes use it; `box` just says less.
@@ -17,8 +17,8 @@ export interface FeedEntry {
   kind: 'chat' | 'guessed' | 'word' | 'mine' | 'attempt';
   playerId: string | null;
   text: string;
-  /** On `mine` and `attempt`: how the server judged it, for the colour. */
-  verdict?: 'correct' | 'close' | 'wrong';
+  /** On `mine` and `attempt`: how the server judged it, for the wording. */
+  verdict?: GuessVerdict;
 }
 
 export interface TurnViewModel {

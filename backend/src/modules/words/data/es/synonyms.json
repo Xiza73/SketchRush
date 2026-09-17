@@ -1,0 +1,51 @@
+{
+  "groups": [
+    ["acera", "vereda", "banqueta", "andén"],
+    ["autobús", "bus", "guagua", "colectivo", "micro", "ómnibus", "combi"],
+    ["auto", "coche", "carro", "automóvil"],
+    ["camión", "troca"],
+    ["ascensor", "elevador"],
+    ["piscina", "alberca", "pileta"],
+    ["tobogán", "resbaladilla", "resbalín"],
+
+    ["gafas", "lentes", "anteojos", "espejuelos"],
+    ["falda", "pollera"],
+    ["chaqueta", "campera", "casaca", "chamarra"],
+    ["camiseta", "polo", "remera", "playera", "polera", "franela"],
+    ["abrigo", "tapado", "sobretodo", "gabán"],
+    ["bufanda", "chalina"],
+    ["gorra", "cachucha", "jockey"],
+    ["cinturón", "correa", "cinto"],
+    ["anillo", "sortija", "argolla"],
+    ["maleta", "valija"],
+
+    ["maíz", "choclo", "elote", "jojoto"],
+    ["plátano", "banana", "guineo", "cambur", "banano"],
+    ["fresa", "frutilla"],
+    ["aguacate", "palta"],
+    ["albaricoque", "damasco", "chabacano"],
+    ["durazno", "melocotón"],
+    ["piña", "ananá"],
+    ["patata", "papa"],
+    ["guisante", "arveja", "chícharo"],
+    ["calabaza", "zapallo", "ayote", "auyama"],
+    ["pastel", "tarta", "bizcocho", "torta", "queque", "ponqué"],
+    ["tortita", "panqueque", "hotcake"],
+    ["zumo", "jugo"],
+
+    ["cerdo", "chancho", "puerco", "marrano", "cochino"],
+    ["camarón", "gamba"],
+    ["pavo", "guajolote", "chompipe"],
+
+    ["nevera", "refrigeradora", "refrigerador", "heladera", "frigorífico", "refri"],
+    ["armario", "ropero", "clóset", "placar", "escaparate"],
+    ["manta", "cobija", "frazada", "frisa"],
+    ["sartén", "paila"],
+    ["bombilla", "foco", "bombillo", "ampolleta"],
+    ["cubo", "balde", "cubeta"],
+    ["bolígrafo", "lapicero", "birome", "esfero"],
+
+    ["cometa", "papalote", "barrilete", "volantín", "chiringa"],
+    ["globo", "bomba", "vejiga", "chimbomba"]
+  ]
+}

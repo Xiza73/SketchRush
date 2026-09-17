@@ -168,6 +168,7 @@ export const es = {
     feedLive: 'Escribe aquí para puntuar',
     feedAttemptClose: (name: string) => `${name} está cerca`,
     feedAttemptWrong: (name: string) => `${name} lo intentó`,
+    feedAttemptSynonym: (name: string) => `${name} lo dijo con otra palabra`,
     modeBox: 'En privado',
     modeChat: 'Chat abierto',
     feedEmpty: 'Todavía nadie dijo nada. Escribe lo primero que veas.',
@@ -178,6 +179,9 @@ export const es = {
     guessOrChat: 'Escribe tu respuesta o comenta',
     sendGuess: 'Enviar respuesta',
     soClose: 'Vas por ahí…',
+    // The thing is right, the word is not. Says which of the two to change,
+    // and says nothing about the word itself that the mask was not showing.
+    thatThing: 'Es eso, pero con otra palabra.',
     notIt: 'No es esa.',
     youGotIt: 'Acertaste',
     drawerCannotGuess: 'Estás dibujando: este turno no adivinas.',

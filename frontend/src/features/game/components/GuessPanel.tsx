@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
-import { ROOM_LIMITS, type GuessMode } from '@/shared/contract';
+import { ROOM_LIMITS, type GuessMode, type GuessVerdict } from '@/shared/contract';
 import { ArrowRightIcon, CheckIcon } from '@/shared/components/icons/GameIcons';
 import { Input } from '@/shared/components/ui/Input';
 import { useT } from '@/shared/i18n';
@@ -20,8 +20,19 @@ interface GuessPanelProps {
   pending: boolean;
   /** Screen is short — usually a keyboard. The feed gives up its room first. */
   compact?: boolean;
-  onGuess: (text: string) => Promise<{ correct: boolean; close: boolean }>;
+  onGuess: (text: string) => Promise<GuessVerdict>;
 }
+
+/**
+ * Both verdicts that are neither right nor wrong wear the same yellow.
+ *
+ * They mean different things and the wording says which — one asks for a letter
+ * back, the other for a different word entirely. What they share is the only
+ * thing a colour can carry here: you are onto it, keep going. A third hue for
+ * the difference would be a new token in a palette the whole family shares, to
+ * split a band the sentence underneath already splits.
+ */
+const nearly = (verdict?: GuessVerdict) => verdict === 'close' || verdict === 'synonym';
 
 /**
  * The room feed and, for whoever can still guess, the box.
@@ -44,7 +55,7 @@ export const GuessPanel = ({
 }: GuessPanelProps) => {
   const t = useT();
   const [text, setText] = useState('');
-  const [verdict, setVerdict] = useState<'close' | 'wrong' | null>(null);
+  const [verdict, setVerdict] = useState<Exclude<GuessVerdict, 'correct'> | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -71,8 +82,10 @@ export const GuessPanel = ({
     // call covers the case where something else stole focus anyway.
     inputRef.current?.focus();
     const result = await onGuess(guess);
-    if (result.correct) return;
-    setVerdict(result.close ? 'close' : 'wrong');
+    // Getting it right is announced by the panel changing under you; there is
+    // nothing left for this line to say.
+    if (result === 'correct') return;
+    setVerdict(result);
     inputRef.current?.focus();
   };
 
@@ -82,10 +95,13 @@ export const GuessPanel = ({
         return t.game.feedGuessed(nameOf(entry.playerId ?? ''), Number(entry.text));
       case 'word':
         return t.game.feedWordWas(entry.text);
-      case 'attempt':
+      case 'attempt': {
+        const who = nameOf(entry.playerId ?? '');
+        if (entry.verdict === 'synonym') return t.game.feedAttemptSynonym(who);
         return entry.verdict === 'close'
-          ? t.game.feedAttemptClose(nameOf(entry.playerId ?? ''))
-          : t.game.feedAttemptWrong(nameOf(entry.playerId ?? ''));
+          ? t.game.feedAttemptClose(who)
+          : t.game.feedAttemptWrong(who);
+      }
       default:
         return entry.text;
     }
@@ -153,7 +169,7 @@ export const GuessPanel = ({
               // will ever say about what they typed.
               entry.kind === 'attempt' &&
                 'border border-dashed ' +
-                  (entry.verdict === 'close'
+                  (nearly(entry.verdict)
                     ? 'border-yellow-line bg-yellow-soft font-medium text-yellow-ink'
                     : 'border-line text-ink-3'),
               // My own attempts, colour-coded by how they landed. Only I have
@@ -162,7 +178,7 @@ export const GuessPanel = ({
                 'self-end border text-right font-medium ' +
                   (entry.verdict === 'correct'
                     ? 'border-green bg-green-soft text-green-ink'
-                    : entry.verdict === 'close'
+                    : nearly(entry.verdict)
                       ? 'border-yellow-line bg-yellow-soft text-yellow-ink'
                       : 'border-line bg-surface-2 text-ink-3 line-through'),
             )}
@@ -219,10 +235,14 @@ export const GuessPanel = ({
             role="status"
             className={cn(
               'mt-1.5 mb-0 text-center text-xs font-semibold',
-              verdict === 'close' ? 'text-yellow-ink' : 'text-ink-3',
+              nearly(verdict) ? 'text-yellow-ink' : 'text-ink-3',
             )}
           >
-            {verdict === 'close' ? t.game.soClose : t.game.notIt}
+            {verdict === 'synonym'
+              ? t.game.thatThing
+              : verdict === 'close'
+                ? t.game.soClose
+                : t.game.notIt}
           </p>
         )}
       </div>

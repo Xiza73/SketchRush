@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { socket } from '@/core/session/lib/socket';
 import { useSessionStore } from '@/core/session/stores/useSessionStore';
-import type { DrawOp, FullState, WordChoicesPayload } from '@/shared/contract';
+import type { DrawOp, FullState, GuessVerdict, WordChoicesPayload } from '@/shared/contract';
 
 import { appendOp, toTurnViewModel, type FeedEntry, type TurnViewModel } from '../models/turn.model';
 
@@ -40,7 +40,7 @@ interface TurnActions {
   appendRestored: (op: DrawOp) => void;
   clearChoices: () => void;
   /** Writes my own attempt into my own feed. Never sent anywhere. */
-  noteMyGuess: (text: string, verdict: 'correct' | 'close' | 'wrong') => void;
+  noteMyGuess: (text: string, verdict: GuessVerdict) => void;
   reset: () => void;
 }
 
@@ -140,8 +140,8 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
       // Addressed to the drawer and nobody else; the server only sends it in a
       // `box` room, where it is the drawer's one window onto whether the
       // drawing is working at all.
-      socket.on('guess:attempt', ({ playerId, close }) =>
-        pushFeed({ kind: 'attempt', playerId, text: '', verdict: close ? 'close' : 'wrong' }),
+      socket.on('guess:attempt', ({ playerId, verdict }) =>
+        pushFeed({ kind: 'attempt', playerId, text: '', verdict }),
       );
 
       socket.on('chat:message', ({ playerId, text }) => {

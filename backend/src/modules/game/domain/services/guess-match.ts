@@ -1,6 +1,5 @@
+import type { GuessVerdict } from '@shared/contract';
 import { editDistance, normalizeWord } from '@modules/words/domain/services/normalize-word';
-
-export type GuessVerdict = 'correct' | 'close' | 'wrong';
 
 /**
  * How many edits away still counts as a near miss, by the length of the answer.
@@ -36,6 +35,11 @@ const stem = (word: string): string => {
   return shorter.length >= MIN_STEM ? shorter : word;
 };
 
+/**
+ * Never returns `synonym`: whether two words are the same thing under two flags
+ * is a fact about the bank, not about the letters, and it is the use case that
+ * holds the lookup. This stays pure and answers only what spelling can answer.
+ */
 export const judgeGuess = (guess: string, answer: string): GuessVerdict => {
   const said = normalizeWord(guess);
   const target = normalizeWord(answer);

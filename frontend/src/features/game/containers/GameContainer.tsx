@@ -149,13 +149,13 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
     const result = await submitGuess(text);
     if (!result.ok) {
       toast.error(result.error.code);
-      return { correct: false, close: false };
+      return 'wrong';
     }
-    const { correct, close } = result.value;
+    const { verdict } = result.value;
     // Written to my own feed only, so a `box` room still shows me what I have
     // already tried without showing anybody else a thing.
-    useTurnStore.getState().noteMyGuess(text, correct ? 'correct' : close ? 'close' : 'wrong');
-    return { correct, close };
+    useTurnStore.getState().noteMyGuess(text, verdict);
+    return verdict;
   };
 
   return (

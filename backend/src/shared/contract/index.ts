@@ -453,12 +453,29 @@ export interface SessionAck {
   state: FullState;
 }
 
-/** What the guesser alone is told about their own attempt. */
+/**
+ * How the server judged one guess.
+ *
+ * - `close`  — near the answer as a *spelling*: a slip or a plural.
+ * - `synonym` — the right thing under another name. The drawing was understood;
+ *   the word was not the one the bank asked for. A room of Peruvians typing
+ *   `vereda` at `acera` is not guessing wrongly, and telling them they are
+ *   close would send them hunting for a missing letter that is not there.
+ *
+ * They are separate because they ask for opposite next moves — fix the letters,
+ * or find the other word entirely.
+ */
+export type GuessVerdict = 'correct' | 'close' | 'synonym' | 'wrong';
+
+/**
+ * What the guesser alone is told about their own attempt.
+ *
+ * The verdict is the only flag: a separate `correct` boolean beside it would be
+ * the same fact written twice, in two fields free to disagree.
+ */
 export interface GuessAck {
-  correct: boolean;
-  /** One letter away from the answer. Never true together with `correct`. */
-  close: boolean;
-  /** Their place and points, set only when `correct`. */
+  verdict: GuessVerdict;
+  /** Their place and points, set only when the verdict is `correct`. */
   position: number | null;
   points: number;
 }
@@ -543,7 +560,12 @@ export interface ChatMessagePayload {
  */
 export interface GuessAttemptPayload {
   playerId: string;
-  close: boolean;
+  /**
+   * Never `correct` — that goes out to the whole room as `player:guessed`.
+   * `synonym` is the loudest thing this event can say: somebody named what is
+   * on the canvas exactly, in another country's word for it.
+   */
+  verdict: Exclude<GuessVerdict, 'correct'>;
 }
 
 export interface HintPayload {

@@ -1,0 +1,27 @@
+{
+  "groups": [
+    ["lift", "elevator"],
+    ["truck", "lorry"],
+    ["motorbike", "motorcycle"],
+    ["plane", "aeroplane", "airplane"],
+    ["pavement", "sidewalk"],
+    ["motorway", "highway", "freeway"],
+    ["cinema", "movies"],
+
+    ["sweater", "jumper", "pullover", "jersey"],
+    ["trousers", "pants", "slacks"],
+
+    ["cookie", "biscuit"],
+    ["candy", "sweets", "lollies"],
+    ["aubergine", "eggplant"],
+    ["courgette", "zucchini"],
+
+    ["sofa", "couch", "settee"],
+    ["wardrobe", "closet"],
+    ["napkin", "serviette"],
+    ["jug", "pitcher"],
+    ["eraser", "rubber"],
+
+    ["postman", "mailman", "postie"]
+  ]
+}
