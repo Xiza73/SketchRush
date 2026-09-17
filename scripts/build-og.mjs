@@ -52,18 +52,18 @@ const T = {
 };
 
 /**
- * The mark, in the same two strokes the app and the favicon use.
+ * The mark, in the same two paths the app and the favicon use.
  *
- * Round caps rather than a polygon, because that is the vocabulary everything
- * else in this product is drawn in, and because a pencil silhouette is all acute
- * angles. The nib is narrower than the barrel or the whole thing reads as a
- * capsule, and both are fat because a thin diagonal dies at 16 px — this shape
- * has to hold from a browser tab to a 1200 px card.
+ * The pencil silhouette with every corner softened — stroked in its own colour
+ * with round joins. Not a bare polygon, which reads hard next to a product whose
+ * every other corner is radiused; and not a shape rounded at both ends, which
+ * stops being a pencil and becomes a capsule. The asymmetry is the whole point.
  */
 const mark = (size, body, tip) =>
-  `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" stroke-linecap="round">` +
-  `<path d="M48 16 L25 39" stroke="${body}" stroke-width="23"/>` +
-  `<path d="M18 46 L15 49" stroke="${tip}" stroke-width="17"/></svg>`;
+  `<svg width="${size}" height="${size}" viewBox="0 0 64 64" ` +
+  `stroke-width="8" stroke-linejoin="round" stroke-linecap="round">` +
+  `<path d="M40 8 L56 24 L28 52 L10 56 L12 36 Z" fill="${body}" stroke="${body}"/>` +
+  `<path d="M12 36 L28 52 L10 56 Z" fill="${tip}" stroke="${tip}"/></svg>`;
 
 /**
  * The house from the landing page's hero, on a 0..100 canvas. Reused rather
