@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import { socket } from '@/core/session/lib/socket';
-import type { FillPayload, StrokePayload } from '@/shared/contract';
+import type { FillPayload, ShapePayload, StrokePayload } from '@/shared/contract';
 
 import { useTurnStore } from '../../stores/useTurnStore';
 
@@ -20,6 +20,11 @@ export const useDraw = () => {
   const sendStroke = useCallback((payload: StrokePayload) => {
     useTurnStore.getState().pushLocalOp({ kind: 'stroke', ...payload });
     socket.emit('draw:stroke', payload);
+  }, []);
+
+  const sendShape = useCallback((payload: ShapePayload) => {
+    useTurnStore.getState().pushLocalOp({ kind: 'shape', ...payload });
+    socket.emit('draw:shape', payload);
   }, []);
 
   const sendFill = useCallback((payload: FillPayload) => {
@@ -46,5 +51,5 @@ export const useDraw = () => {
     socket.emit('draw:clear');
   }, []);
 
-  return { sendStroke, sendFill, sendUndo, sendRedo, sendClear };
+  return { sendStroke, sendShape, sendFill, sendUndo, sendRedo, sendClear };
 };

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { PALETTE } from '@/shared/contract';
 import { useSessionStore } from '@/core/session/stores/useSessionStore';
 import { useLobbyStore } from '@/features/lobby/stores/useLobbyStore';
 import { ReactionOverlay } from '@/features/reactions/components/ReactionOverlay';
@@ -55,11 +56,11 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
   const myId = useSessionStore((state) => state.session?.playerId ?? null);
 
   const [tool, setTool] = useState<CanvasTool>('brush');
-  const [color, setColor] = useState(0);
+  const [color, setColor] = useState(PALETTE[0] ?? '#1c1a17');
   const [size, setSize] = useState(10);
 
   const { chooseWord, pending: choosing } = useChooseWord();
-  const { sendStroke, sendFill, sendUndo, sendRedo, sendClear } = useDraw();
+  const { sendStroke, sendShape, sendFill, sendUndo, sendRedo, sendClear } = useDraw();
   const { submitGuess, pending: guessing } = useSubmitGuess();
 
   // The turn is over: the reveal and the table live on the results screen.
@@ -209,6 +210,7 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
             color={color}
             size={size}
             onStroke={sendStroke}
+            onShape={sendShape}
             onFill={sendFill}
             label={iAmDrawer ? t.game.canvasYours : t.game.canvasTheirs(nameOf(turn.drawerId))}
           />

@@ -14,7 +14,7 @@ import { CLOCK, type Clock } from '@shared/domain/clock';
 import { DomainException } from '@shared/domain/domain.exception';
 import { OutboundEvent, RoomEventsBus } from '@shared/events/room-events.bus';
 import { ChooseWordDto } from '@modules/game/application/dtos/choose-word.dto';
-import { FillDto, StrokeDto } from '@modules/game/application/dtos/draw.dto';
+import { FillDto, ShapeDto, StrokeDto } from '@modules/game/application/dtos/draw.dto';
 import { GuessDto } from '@modules/game/application/dtos/guess.dto';
 import { BeginGameUseCase } from '@modules/game/application/use-cases/begin-game.use-case';
 import { ChooseWordUseCase } from '@modules/game/application/use-cases/choose-word.use-case';
@@ -267,6 +267,19 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       throw new DomainException('cooldown');
     }
     this.draw.stroke(roomCode, playerId, dto);
+    return OK_EMPTY;
+  }
+
+  @SubscribeMessage('draw:shape')
+  onShape(@ConnectedSocket() client: GameSocket, @MessageBody() dto: ShapeDto): EmptyAck {
+    const { roomCode, playerId } = this.requireSession(client);
+    // Shares the stroke budget: a shape is one message on pointer-up, so a hand
+    // sends a handful a second at most and a script sending thousands is the
+    // same script the stroke limit is there for.
+    if (!this.limiter.allow(client.id, 'draw:stroke', STROKE_LIMIT, this.clock.now())) {
+      throw new DomainException('cooldown');
+    }
+    this.draw.shape(roomCode, playerId, dto);
     return OK_EMPTY;
   }
 

@@ -8,7 +8,7 @@ const stroke = (id: number, ...points: [number, number][]): DrawOp => ({
   kind: 'stroke',
   id,
   tool: 'brush',
-  color: 0,
+  color: '#1c1a17',
   size: 10,
   points: points.map(([x, y]) => ({ x, y })),
 });
@@ -38,7 +38,7 @@ describe('appendOp', () => {
     const withFill = appendOp(appendOp([], stroke(1, [0, 0])), {
       kind: 'fill',
       id: 9,
-      color: 3,
+      color: '#b33a2b',
       at: { x: 0.5, y: 0.5 },
     });
     const ops = appendOp(withFill, stroke(1, [0.2, 0.2]));

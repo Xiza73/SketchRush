@@ -2,8 +2,10 @@ import { BRUSH_SIZES, PALETTE } from '@/shared/contract';
 import {
   BrushIcon,
   BucketIcon,
+  CircleIcon,
   EraserIcon,
   RedoIcon,
+  SquareIcon,
   TrashIcon,
   UndoIcon,
 } from '@/shared/components/icons/GameIcons';
@@ -14,11 +16,12 @@ import type { CanvasTool } from './DrawingCanvas';
 
 interface CanvasToolbarProps {
   tool: CanvasTool;
-  color: number;
+  /** `#rrggbb`, whatever the drawer picked. */
+  color: string;
   size: number;
   disabled: boolean;
   onTool: (tool: CanvasTool) => void;
-  onColor: (index: number) => void;
+  onColor: (color: string) => void;
   onSize: (size: number) => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -50,6 +53,8 @@ export const CanvasToolbar = ({
     { id: 'brush', label: t.game.toolBrush, Icon: BrushIcon },
     { id: 'eraser', label: t.game.toolEraser, Icon: EraserIcon },
     { id: 'fill', label: t.game.toolFill, Icon: BucketIcon },
+    { id: 'rect', label: t.game.toolRect, Icon: SquareIcon },
+    { id: 'ellipse', label: t.game.toolEllipse, Icon: CircleIcon },
   ];
 
   return (
@@ -84,17 +89,46 @@ export const CanvasToolbar = ({
             type="button"
             disabled={disabled}
             aria-label={t.game.colorNumber(index + 1)}
-            aria-pressed={color === index}
-            onClick={() => onColor(index)}
+            aria-pressed={color === swatch}
+            onClick={() => onColor(swatch)}
             style={{ background: swatch }}
             className={cn(
               'h-7 w-7 rounded-lg border-2 transition-transform disabled:opacity-40',
               // The ring, not the swatch, carries the selection: a chosen white
               // and an unchosen white have to be told apart on a white card.
-              color === index ? 'scale-110 border-ink' : 'border-line hover:scale-105',
+              color === swatch ? 'scale-110 border-ink' : 'border-line hover:scale-105',
             )}
           />
         ))}
+        {/*
+          Any colour, not only the twelve. The native picker is deliberate: it
+          is the one every platform already knows how to show well, it handles
+          a touch screen and a colour-blind user without us writing either, and
+          a hand-built wheel here would be a worse version of it.
+        */}
+        <label
+          className={cn(
+            'relative h-7 w-7 overflow-hidden rounded-lg border-2 transition-transform',
+            disabled && 'pointer-events-none opacity-40',
+            PALETTE.includes(color)
+              ? 'border-line hover:scale-105'
+              : 'scale-110 border-ink',
+          )}
+          style={{ background: PALETTE.includes(color) ? undefined : color }}
+          title={t.game.colorPick}
+        >
+          {PALETTE.includes(color) && (
+            <span aria-hidden="true" className="absolute inset-0 rounded-md bg-conic-swatch" />
+          )}
+          <input
+            type="color"
+            value={color}
+            disabled={disabled}
+            aria-label={t.game.colorPick}
+            onChange={(event) => onColor(event.target.value)}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </label>
       </div>
 
       <div className="h-8 w-px bg-line" aria-hidden="true" />

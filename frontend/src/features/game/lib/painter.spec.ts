@@ -24,6 +24,10 @@ const fakeContext = () => {
     lineTo: (x: number, y: number) => calls.push(`lineTo ${Math.round(x)},${Math.round(y)}`),
     stroke: () => calls.push('stroke'),
     arc: () => calls.push('arc'),
+    rect: (x: number, y: number, w: number, h: number) =>
+      calls.push(`rect ${Math.round(x)},${Math.round(y)} ${Math.round(w)}x${Math.round(h)}`),
+    ellipse: (x: number, y: number, rx: number, ry: number) =>
+      calls.push(`ellipse ${Math.round(x)},${Math.round(y)} ${Math.round(rx)}x${Math.round(ry)}`),
     fill: () => calls.push('fill'),
   };
   return ctx as unknown as CanvasRenderingContext2D & { calls: string[] };
@@ -33,7 +37,7 @@ const stroke = (id: number, ...points: [number, number][]): DrawOp => ({
   kind: 'stroke',
   id,
   tool: 'brush',
-  color: 0,
+  color: '#1c1a17',
   size: 10,
   points: points.map(([x, y]) => ({ x, y })),
 });
@@ -145,6 +149,34 @@ describe('paint', () => {
     expect(ctx.calls).toContain('fillRect');
     expect(ctx.calls).toContain('lineTo 100,100');
     expect(cursor).toEqual({ op: 2, point: 2 });
+  });
+
+  it('draws a rectangle from the two corners of the drag', () => {
+    const ctx = fakeContext();
+    const ops: DrawOp[] = [
+      { kind: 'shape', id: 1, shape: 'rect', color: '#1c1a17', size: 10,
+        from: { x: 0.1, y: 0.2 }, to: { x: 0.6, y: 0.7 } },
+    ];
+
+    paint(ctx, ops, START, W, H);
+
+    expect(ctx.calls).toContain('rect 10,20 50x50');
+  });
+
+  /**
+   * The drag is two opposite corners, in whichever order the hand made them.
+   * Dragging up and left has to give the same shape as dragging down and right.
+   */
+  it('does not care which way the drag went', () => {
+    const forwards = fakeContext();
+    const backwards = fakeContext();
+    const box = { kind: 'shape', id: 1, shape: 'ellipse', color: '#1c1a17', size: 10 } as const;
+
+    paint(forwards, [{ ...box, from: { x: 0.2, y: 0.2 }, to: { x: 0.8, y: 0.6 } }], START, W, H);
+    paint(backwards, [{ ...box, from: { x: 0.8, y: 0.6 }, to: { x: 0.2, y: 0.2 } }], START, W, H);
+
+    expect(forwards.calls).toEqual(backwards.calls);
+    expect(forwards.calls).toContain('ellipse 50,40 30x20');
   });
 
   it('does nothing at all on an empty drawing', () => {

@@ -66,9 +66,16 @@ Everything else in this document is identical in both modes.
 Tools, all of them on the drawer's screen only:
 
 - **Brush** in four sizes.
-- **A colour palette**, the same swatches for everyone.
+- **Twelve swatches, and any other colour.** The swatches are suggestions; the
+  picker beside them is the platform's own, which already handles a touch screen
+  and a colour-blind user better than anything hand-built here would.
 - **Eraser.**
 - **Fill** (bucket).
+- **Rectangle** and **ellipse**, dragged corner to corner in any direction.
+  Outlines, not fills: the bucket already fills, and a shape that arrives solid
+  takes a decision away that the drawer can still make afterwards. A shape is one
+  message on pointer-up — the drag itself is previewed on the drawer's screen
+  alone, so it costs one operation rather than one per frame.
 - **Undo** and **redo**, one operation at a time, on the buttons or on
   `Ctrl+Z` / `Ctrl+Y` (`Cmd+Shift+Z` also redoes, for the other habit).
 - **Clear**, the whole canvas.
@@ -85,6 +92,11 @@ what it hides is kept, so undo can take a clear back. It is the operation people
 most want back and the one it would be cruellest to lose. The kept strokes still
 count against the canvas cap, which is what stops a drawer clearing their way
 past it.
+
+Colours travel as `#rrggbb`, refused by the server in any other shape: the
+string reaches every other player's canvas and is replayed to whoever joins next.
+They used to be an index into the palette, which saved about eight bytes on a
+chunk of five hundred and cost the drawer every colour not on the list.
 
 Strokes travel as points, batched every ~50 ms, not as a finished stroke on
 mouse-up: waiting for the pen to lift makes a drawing game feel broken. The

@@ -363,3 +363,25 @@
   max-width: 100%;
   margin-inline: auto;
 }
+
+/*
+ * The colour picker's own swatch, while the drawer is still on one of the
+ * twelve. A hue wheel is the universally understood "pick any colour" and it
+ * has to be legible at 28 px, which rules out anything with detail in it.
+ *
+ * The house bans decorative gradients; this is not decoration. It is the
+ * control's only way of saying what it does.
+ */
+.bg-conic-swatch {
+  background: conic-gradient(
+    #b33a2b,
+    #e5733a,
+    #e5b537,
+    #3fa66b,
+    #0e7490,
+    #3b5bdb,
+    #6c4cf1,
+    #d946a6,
+    #b33a2b
+  );
+}

@@ -157,6 +157,10 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
         if (isMyEcho()) return;
         set((state) => ({ ops: appendOp(state.ops, { kind: 'stroke', ...payload }) }));
       });
+      socket.on('draw:shape', (payload) => {
+        if (isMyEcho()) return;
+        set((state) => ({ ops: [...state.ops, { kind: 'shape', ...payload }] }));
+      });
       socket.on('draw:fill', (payload) => {
         if (isMyEcho()) return;
         set((state) => ({

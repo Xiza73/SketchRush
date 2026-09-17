@@ -1,4 +1,4 @@
-import { PALETTE, type DrawOp, type Point } from '@/shared/contract';
+import type { DrawOp, Point, ShapeKind } from '@/shared/contract';
 
 /**
  * The sheet is paper white in both themes. The palette is twelve inks chosen to
@@ -34,7 +34,6 @@ const toRgb = (hex: string): [number, number, number] => [
   parseInt(hex.slice(5, 7), 16),
 ];
 
-const colorOf = (index: number): string => PALETTE[index] ?? PALETTE[0] ?? '#000000';
 
 export const paintPaper = (ctx: CanvasRenderingContext2D, width: number, height: number): void => {
   ctx.fillStyle = PAPER;
@@ -50,7 +49,7 @@ const strokeSegment = (
 ): void => {
   const points = op.points;
   if (points.length === 0) return;
-  const ink = op.tool === 'eraser' ? PAPER : colorOf(op.color);
+  const ink = op.tool === 'eraser' ? PAPER : op.color;
   const lineWidth = Math.max(1, op.size * (width / REFERENCE_WIDTH));
   const at = (p: Point): [number, number] => [p.x * width, p.y * height];
 
@@ -75,6 +74,36 @@ const strokeSegment = (
     const [x, y] = at(points[i]!);
     ctx.lineTo(x, y);
   }
+  ctx.stroke();
+};
+
+/**
+ * A rectangle or an ellipse from the two corners of a drag.
+ *
+ * Exported because the drawer's live preview has to be drawn by this exact
+ * function: a preview that is one line of code away from what finally lands is
+ * a preview that lies, and the lie only shows up when you let go.
+ *
+ * The drag is taken as opposite corners in any direction, so dragging up and
+ * left makes the same shape as dragging down and right.
+ */
+export const strokeShape = (
+  ctx: CanvasRenderingContext2D,
+  op: { shape: ShapeKind; color: string; size: number; from: Point; to: Point },
+  width: number,
+  height: number,
+): void => {
+  const x0 = Math.min(op.from.x, op.to.x) * width;
+  const y0 = Math.min(op.from.y, op.to.y) * height;
+  const w = Math.abs(op.to.x - op.from.x) * width;
+  const h = Math.abs(op.to.y - op.from.y) * height;
+
+  ctx.strokeStyle = op.color;
+  ctx.lineWidth = Math.max(1, op.size * (width / REFERENCE_WIDTH));
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  if (op.shape === 'rect') ctx.rect(x0, y0, w, h);
+  else ctx.ellipse(x0 + w / 2, y0 + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
   ctx.stroke();
 };
 
@@ -176,7 +205,8 @@ export const paint = (
     }
 
     if (current.kind === 'clear') paintPaper(ctx, width, height);
-    else floodFill(ctx, current.at, colorOf(current.color), width, height);
+    else if (current.kind === 'fill') floodFill(ctx, current.at, current.color, width, height);
+    else strokeShape(ctx, current, width, height);
     op += 1;
     point = 0;
   }

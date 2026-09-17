@@ -6,16 +6,19 @@ import {
   IsIn,
   IsInt,
   IsNumber,
+  Matches,
   Max,
   Min,
   ValidateNested,
 } from 'class-validator';
 import {
   BRUSH_SIZES,
-  PALETTE,
+  COLOR_PATTERN,
   ROOM_LIMITS,
   type FillPayload,
   type Point,
+  type ShapeKind,
+  type ShapePayload,
   type StrokePayload,
   type StrokeTool,
 } from '@shared/contract';
@@ -36,6 +39,17 @@ export class PointDto implements Point {
   y!: number;
 }
 
+/**
+ * The colour rule, in one place because three payloads carry one.
+ *
+ * `#rrggbb` lower case and nothing else. The drawer can pick any colour now
+ * rather than an index into a fixed palette, which means this string reaches
+ * the canvas of every other player in the room — so it is pinned to a shape
+ * that cannot be anything but a colour, rather than trusted because the only
+ * client we wrote happens to send six hex digits.
+ */
+const IsHexColor = () => Matches(COLOR_PATTERN, { message: 'color must be #rrggbb, lower case' });
+
 export class StrokeDto implements StrokePayload {
   /** Chunks of the same line share this, which is what joins them server-side. */
   @IsInt()
@@ -45,11 +59,8 @@ export class StrokeDto implements StrokePayload {
   @IsIn(['brush', 'eraser'])
   tool!: StrokeTool;
 
-  /** An index into `PALETTE`; the use case checks it again before it is stored. */
-  @IsInt()
-  @Min(0)
-  @Max(PALETTE.length - 1)
-  color!: number;
+  @IsHexColor()
+  color!: string;
 
   @IsIn(BRUSH_SIZES)
   size!: number;
@@ -62,11 +73,32 @@ export class StrokeDto implements StrokePayload {
   points!: PointDto[];
 }
 
-export class FillDto implements FillPayload {
+export class ShapeDto implements ShapePayload {
   @IsInt()
   @Min(0)
-  @Max(PALETTE.length - 1)
-  color!: number;
+  id!: number;
+
+  @IsIn(['rect', 'ellipse'])
+  shape!: ShapeKind;
+
+  @IsHexColor()
+  color!: string;
+
+  @IsIn(BRUSH_SIZES)
+  size!: number;
+
+  @ValidateNested()
+  @Type(() => PointDto)
+  from!: PointDto;
+
+  @ValidateNested()
+  @Type(() => PointDto)
+  to!: PointDto;
+}
+
+export class FillDto implements FillPayload {
+  @IsHexColor()
+  color!: string;
 
   @ValidateNested()
   @Type(() => PointDto)

@@ -1,4 +1,4 @@
-import type { DrawOp, Point, StrokeTool, WordChoice } from '@shared/contract';
+import type { DrawOp, Point, ShapeKind, StrokeTool, WordChoice } from '@shared/contract';
 import {
   hintCandidates,
   hintCount,
@@ -202,7 +202,7 @@ export class Turn {
    * does not come near `CANVAS_POINT_LIMIT`; a client sending as fast as the
    * socket allows does, and the buffer is replayed to every late joiner.
    */
-  addStroke(id: number, tool: StrokeTool, color: number, size: number, points: Point[]): boolean {
+  addStroke(id: number, tool: StrokeTool, color: string, size: number, points: Point[]): boolean {
     if (this.points + points.length > CANVAS_POINT_LIMIT) return false;
     this.dropUndone();
     this.points += points.length;
@@ -216,7 +216,30 @@ export class Turn {
     return true;
   }
 
-  addFill(color: number, at: Point): boolean {
+  /**
+   * A rectangle or an ellipse, whole. It arrives once, when the drag ends —
+   * the drawer sees a preview while dragging but nothing is sent until they
+   * let go, so a shape costs one message rather than one per pointer move.
+   *
+   * Two points against the cap, not one: it is two corners.
+   */
+  addShape(
+    id: number,
+    shape: ShapeKind,
+    color: string,
+    size: number,
+    from: Point,
+    to: Point,
+  ): boolean {
+    if (this.points + 2 > CANVAS_POINT_LIMIT) return false;
+    this.dropUndone();
+    this.points += 2;
+    this.canvas.push({ kind: 'shape', id, shape, color, size, from, to });
+    this.nextOpId = Math.max(this.nextOpId, id + 1);
+    return true;
+  }
+
+  addFill(color: string, at: Point): boolean {
     if (this.points + 1 > CANVAS_POINT_LIMIT) return false;
     this.dropUndone();
     this.points += 1;
@@ -268,7 +291,8 @@ export class Turn {
   }
 
   private costOf(op: DrawOp): number {
-    return op.kind === 'stroke' ? op.points.length : 1;
+    if (op.kind === 'stroke') return op.points.length;
+    return op.kind === 'shape' ? 2 : 1;
   }
 
   /**

@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { PALETTE, type FillPayload, type StrokePayload } from '@shared/contract';
+import {
+  COLOR_PATTERN,
+  type FillPayload,
+  type ShapePayload,
+  type StrokePayload,
+} from '@shared/contract';
 import { DomainException } from '@shared/domain/domain.exception';
 import { RoomEventsBus } from '@shared/events/room-events.bus';
 import type { Turn } from '../../domain/entities/turn.entity';
@@ -28,6 +33,15 @@ export class DrawUseCase {
     // drawing from the one the room is looking at.
     if (!turn.addStroke(payload.id, payload.tool, color, payload.size, payload.points)) return;
     this.bus.publish({ roomCode, event: 'draw:stroke', payload });
+  }
+
+  shape(roomCode: string, playerId: string, payload: ShapePayload): void {
+    const turn = this.requireDrawing(roomCode, playerId);
+    const color = this.requireColor(payload.color);
+    if (!turn.addShape(payload.id, payload.shape, color, payload.size, payload.from, payload.to)) {
+      return;
+    }
+    this.bus.publish({ roomCode, event: 'draw:shape', payload });
   }
 
   fill(roomCode: string, playerId: string, payload: FillPayload): void {
@@ -63,11 +77,13 @@ export class DrawUseCase {
     return turn;
   }
 
-  /** The wire carries an index into the shared palette, never a colour string. */
-  private requireColor(index: number): number {
-    if (!Number.isInteger(index) || index < 0 || index >= PALETTE.length) {
-      throw new DomainException('invalid_payload');
-    }
-    return index;
+  /**
+   * Checked here as well as in the DTO. This string ends up on the canvas of
+   * every other player in the room, and the buffer it is written into is
+   * replayed to whoever joins next, so it is worth refusing twice.
+   */
+  private requireColor(color: string): string {
+    if (!COLOR_PATTERN.test(color)) throw new DomainException('invalid_payload');
+    return color;
   }
 }

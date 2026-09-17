@@ -102,9 +102,13 @@ export const EMOTES: readonly Emote[] = [
 ];
 
 /**
- * The drawing swatches, sent over the wire as an index into this array so a
- * stroke costs a number rather than a string and every screen paints the same
- * colour. Index 0 is the default brush.
+ * The swatches the toolbar offers. Index 0 is the default brush.
+ *
+ * These used to *be* the colour: an operation carried an index into this array.
+ * That bought about eight bytes on a stroke chunk of five hundred and cost the
+ * drawer any colour not on the list, so operations now carry the hex itself and
+ * this is a list of suggestions rather than the whole vocabulary. Anything the
+ * server accepts is `#rrggbb`, lower case, and nothing else.
  */
 export const PALETTE: readonly string[] = [
   '#1c1a17', // ink
@@ -184,6 +188,15 @@ export interface Point {
 export type StrokeTool = 'brush' | 'eraser';
 
 /**
+ * Outlines, not fills. The bucket already fills, and a shape that arrives solid
+ * takes a decision away from the drawer that they can still make afterwards.
+ */
+export type ShapeKind = 'rect' | 'ellipse';
+
+/** What the server accepts as a colour, and the only thing it stores. */
+export const COLOR_PATTERN = /^#[0-9a-f]{6}$/;
+
+/**
  * One entry of the turn's canvas. The server keeps the list so a reload or a
  * late join replays the drawing instead of landing on a blank sheet; it is
  * dropped when the turn ends.
@@ -193,8 +206,17 @@ export type StrokeTool = 'brush' | 'eraser';
  * built it.
  */
 export type DrawOp =
-  | { kind: 'stroke'; id: number; tool: StrokeTool; color: number; size: number; points: Point[] }
-  | { kind: 'fill'; id: number; color: number; at: Point }
+  | { kind: 'stroke'; id: number; tool: StrokeTool; color: string; size: number; points: Point[] }
+  | {
+      kind: 'shape';
+      id: number;
+      shape: ShapeKind;
+      color: string;
+      size: number;
+      from: Point;
+      to: Point;
+    }
+  | { kind: 'fill'; id: number; color: string; at: Point }
   | { kind: 'clear'; id: number };
 
 // ---------------------------------------------------------------------------
@@ -394,13 +416,25 @@ export interface ChooseWordPayload {
 export interface StrokePayload {
   id: number;
   tool: StrokeTool;
-  color: number;
+  /** `#rrggbb`, lower case. The eraser ignores it and paints paper. */
+  color: string;
   size: number;
   points: Point[];
 }
 
+/** Drawer only. A rectangle or an ellipse, committed when the drag ends. */
+export interface ShapePayload {
+  id: number;
+  shape: ShapeKind;
+  color: string;
+  size: number;
+  /** The two corners of the drag, normalised like every other coordinate. */
+  from: Point;
+  to: Point;
+}
+
 export interface FillPayload {
-  color: number;
+  color: string;
   at: Point;
 }
 
@@ -462,6 +496,7 @@ export interface ClientToServerEvents {
   'room:update-settings': (payload: UpdateSettingsPayload, ack?: (r: EmptyAck) => void) => void;
   'turn:choose': (payload: ChooseWordPayload, ack?: (r: EmptyAck) => void) => void;
   'draw:stroke': (payload: StrokePayload, ack?: (r: EmptyAck) => void) => void;
+  'draw:shape': (payload: ShapePayload, ack?: (r: EmptyAck) => void) => void;
   'draw:fill': (payload: FillPayload, ack?: (r: EmptyAck) => void) => void;
   'draw:undo': (ack?: (r: EmptyAck) => void) => void;
   'draw:redo': (ack?: (r: EmptyAck) => void) => void;
@@ -537,6 +572,7 @@ export interface ServerToClientEvents {
   'turn:hint': (payload: HintPayload) => void;
   'turn:end': (payload: TurnEndPayload) => void;
   'draw:stroke': (payload: StrokePayload) => void;
+  'draw:shape': (payload: ShapePayload) => void;
   'draw:fill': (payload: FillPayload) => void;
   'draw:undo': () => void;
   /**

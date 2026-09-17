@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
-import { ROOM_LIMITS, type DrawOp, type FillPayload, type Point, type StrokePayload } from '@/shared/contract';
+import {
+  ROOM_LIMITS,
+  type DrawOp,
+  type FillPayload,
+  type Point,
+  type ShapeKind,
+  type ShapePayload,
+  type StrokePayload,
+} from '@/shared/contract';
 import { cn } from '@/shared/lib/cn';
 
-import { paint, paintPaper, START, type PaintCursor } from '../lib/painter';
+import { paint, paintPaper, START, strokeShape, type PaintCursor } from '../lib/painter';
 
-export type CanvasTool = 'brush' | 'eraser' | 'fill';
+export type CanvasTool = 'brush' | 'eraser' | 'fill' | ShapeKind;
+
+/** The two that are dragged into existence rather than traced. */
+const isShape = (tool: CanvasTool): tool is ShapeKind => tool === 'rect' || tool === 'ellipse';
 
 interface DrawingCanvasProps {
   ops: DrawOp[];
@@ -14,9 +25,11 @@ interface DrawingCanvasProps {
   /** True only for the drawer, and only while the turn is being drawn. */
   interactive: boolean;
   tool: CanvasTool;
-  color: number;
+  /** . Any colour the drawer picked, not an index into a palette. */
+  color: string;
   size: number;
   onStroke: (payload: StrokePayload) => void;
+  onShape: (payload: ShapePayload) => void;
   onFill: (payload: FillPayload) => void;
   /** What the sheet is, for a reader that cannot see it. */
   label: string;
@@ -41,6 +54,7 @@ export const DrawingCanvas = ({
   color,
   size,
   onStroke,
+  onShape,
   onFill,
   label,
   className,
@@ -92,6 +106,42 @@ export const DrawingCanvas = ({
     }
     cursorRef.current = paint(ctx, ops, cursorRef.current, canvas.width, canvas.height);
   }, [ops, generation, pixels]);
+
+  // --- the shape being dragged ---------------------------------------------
+  /**
+   * The preview lives on its own canvas, stacked over the drawing.
+   *
+   * Drawing it onto the main one would mean erasing it again on every pointer
+   * move, and the only way to erase from that canvas is to repaint the whole
+   * turn — forty times a second, against the incremental cursor that exists
+   * precisely so that never happens. A second canvas is cleared in one call.
+   */
+  const overlayRef = useRef<HTMLCanvasElement>(null);
+  const anchor = useRef<Point | null>(null);
+
+  const clearPreview = useCallback(() => {
+    const overlay = overlayRef.current;
+    overlay?.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height);
+  }, []);
+
+  const drawPreview = useCallback(
+    (to: Point) => {
+      const overlay = overlayRef.current;
+      const ctx = overlay?.getContext('2d');
+      const from = anchor.current;
+      if (!overlay || !ctx || !from) return;
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      // The same function that will paint it for real, so what the drawer is
+      // looking at is what the room gets.
+      strokeShape(
+        ctx,
+        { shape: tool as ShapeKind, color, size, from, to },
+        overlay.width,
+        overlay.height,
+      );
+    },
+    [tool, color, size],
+  );
 
   // --- the hand -----------------------------------------------------------
   const strokeId = useRef(1);
@@ -148,6 +198,12 @@ export const DrawingCanvas = ({
       return;
     }
 
+    if (isShape(tool)) {
+      anchor.current = point;
+      drawPreview(point);
+      return;
+    }
+
     strokeId.current += 1;
     pending.current = [point];
     last.current = point;
@@ -157,9 +213,19 @@ export const DrawingCanvas = ({
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!interactive || last.current === null) return;
+    if (!interactive) return;
     const point = pointAt(event);
     if (!point) return;
+
+    // A shape sends nothing while it is being dragged: it is one message on
+    // pointer-up, not one per frame, so the preview is the drawer's alone until
+    // they let go of it.
+    if (anchor.current) {
+      drawPreview(point);
+      return;
+    }
+
+    if (last.current === null) return;
     const dx = point.x - last.current.x;
     const dy = point.y - last.current.y;
     if (dx * dx + dy * dy < MIN_STEP * MIN_STEP) return;
@@ -167,7 +233,21 @@ export const DrawingCanvas = ({
     pending.current.push(point);
   };
 
-  const endStroke = () => {
+  const endStroke = (event?: ReactPointerEvent<HTMLCanvasElement>) => {
+    const from = anchor.current;
+    if (from) {
+      anchor.current = null;
+      clearPreview();
+      const to = (event && pointAt(event)) ?? from;
+      // A tap with no drag is not a shape. Letting it through would leave an
+      // invisible zero-sized operation on the canvas for undo to trip over.
+      if (Math.abs(to.x - from.x) > MIN_STEP || Math.abs(to.y - from.y) > MIN_STEP) {
+        strokeId.current += 1;
+        onShape({ id: strokeId.current, shape: tool as ShapeKind, color, size, from, to });
+      }
+      return;
+    }
+
     if (last.current === null) return;
     last.current = null;
     stopTimer();
@@ -205,6 +285,18 @@ export const DrawingCanvas = ({
         onPointerUp={endStroke}
         onPointerCancel={endStroke}
         onPointerLeave={endStroke}
+      />
+      {/*
+        The shape being dragged, and nothing else. `pointer-events-none` is
+        load-bearing: it sits over the canvas the hand is drawing on, and
+        without it this element would swallow every move after the first.
+      */}
+      <canvas
+        ref={overlayRef}
+        aria-hidden="true"
+        width={pixels.width}
+        height={pixels.height}
+        className="pointer-events-none absolute inset-0 h-full w-full"
       />
     </div>
   );

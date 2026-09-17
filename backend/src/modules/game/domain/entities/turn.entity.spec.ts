@@ -1,5 +1,8 @@
 import { CANVAS_POINT_LIMIT, Turn } from './turn.entity';
 
+/** Any valid colour; these tests are about the buffer, not the palette. */
+const INK = '#1c1a17';
+
 const T0 = 1_000_000;
 
 const turn = (over: Partial<ConstructorParameters<typeof Turn>[0]> = {}) =>
@@ -167,26 +170,51 @@ describe('Turn · the canvas', () => {
 
   it('appends to the stroke already in flight instead of starting another', () => {
     const t = turn();
-    t.addStroke(1, 'brush', 0, 4, points);
-    t.addStroke(1, 'brush', 0, 4, [{ x: 0.3, y: 0.4 }]);
+    t.addStroke(1, 'brush', INK, 4, points);
+    t.addStroke(1, 'brush', INK, 4, [{ x: 0.3, y: 0.4 }]);
     expect(t.canvas).toHaveLength(1);
     expect(t.canvas[0]).toMatchObject({ kind: 'stroke', points: [points[0], { x: 0.3, y: 0.4 }] });
   });
 
   it('starts a new entry once the id changes', () => {
     const t = turn();
-    t.addStroke(1, 'brush', 0, 4, points);
-    t.addStroke(2, 'eraser', 2, 20, points);
+    t.addStroke(1, 'brush', INK, 4, points);
+    t.addStroke(2, 'eraser', INK, 20, points);
     expect(t.canvas).toHaveLength(2);
   });
 
   it('undoes the last operation whatever kind it was', () => {
     const t = turn();
-    t.addStroke(1, 'brush', 0, 4, points);
-    t.addFill(3, { x: 0.5, y: 0.5 });
+    t.addStroke(1, 'brush', INK, 4, points);
+    t.addFill(INK, { x: 0.5, y: 0.5 });
     t.undo();
     expect(t.canvas).toHaveLength(1);
     expect(t.canvas[0]?.kind).toBe('stroke');
+  });
+
+  it('keeps a shape whole rather than as the drag that made it', () => {
+    const t = turn();
+    t.addShape(1, 'rect', INK, 10, { x: 0.1, y: 0.1 }, { x: 0.4, y: 0.5 });
+    expect(t.canvas).toEqual([
+      {
+        kind: 'shape',
+        id: 1,
+        shape: 'rect',
+        color: INK,
+        size: 10,
+        from: { x: 0.1, y: 0.1 },
+        to: { x: 0.4, y: 0.5 },
+      },
+    ]);
+  });
+
+  it('undoes a shape like anything else, and puts it back', () => {
+    const t = turn();
+    t.addStroke(1, 'brush', INK, 4, points);
+    t.addShape(2, 'ellipse', INK, 10, { x: 0, y: 0 }, { x: 1, y: 1 });
+    t.undo();
+    expect(t.canvas.map((op) => op.kind)).toEqual(['stroke']);
+    expect(t.redo()).toMatchObject({ kind: 'shape', shape: 'ellipse' });
   });
 
   it('marks a clear rather than emptying the list', () => {
@@ -194,7 +222,7 @@ describe('Turn · the canvas', () => {
     // whatever was on screen before the clear. What it covers is kept, so undo
     // can take the clear back.
     const t = turn();
-    t.addStroke(1, 'brush', 0, 4, points);
+    t.addStroke(1, 'brush', INK, 4, points);
     t.clear();
     expect(t.canvas.map((op) => op.kind)).toEqual(['stroke', 'clear']);
   });
@@ -202,14 +230,14 @@ describe('Turn · the canvas', () => {
   it('says whether undo had anything to undo', () => {
     const t = turn();
     expect(t.undo()).toBe(false);
-    t.addStroke(1, 'brush', 0, 4, points);
+    t.addStroke(1, 'brush', INK, 4, points);
     expect(t.undo()).toBe(true);
   });
 
   it('puts back what undo took, in order', () => {
     const t = turn();
-    t.addStroke(1, 'brush', 0, 4, points);
-    t.addFill(3, { x: 0.5, y: 0.5 });
+    t.addStroke(1, 'brush', INK, 4, points);
+    t.addFill(INK, { x: 0.5, y: 0.5 });
     t.undo();
     t.undo();
     expect(t.canvas).toHaveLength(0);
@@ -225,7 +253,7 @@ describe('Turn · the canvas', () => {
 
   it('takes a clear back, with everything it covered', () => {
     const t = turn();
-    t.addStroke(1, 'brush', 0, 4, points);
+    t.addStroke(1, 'brush', INK, 4, points);
     t.clear();
     t.undo();
     expect(t.canvas.map((op) => op.kind)).toEqual(['stroke']);
@@ -235,9 +263,9 @@ describe('Turn · the canvas', () => {
     // Every editor works this way, and the alternative is a redo that
     // resurrects a line from before the one just drawn.
     const t = turn();
-    t.addStroke(1, 'brush', 0, 4, points);
+    t.addStroke(1, 'brush', INK, 4, points);
     t.undo();
-    t.addStroke(2, 'brush', 0, 4, points);
+    t.addStroke(2, 'brush', INK, 4, points);
     expect(t.redo()).toBeNull();
     expect(t.canvas).toHaveLength(1);
   });
@@ -245,11 +273,11 @@ describe('Turn · the canvas', () => {
   it('gives the points back on undo and takes them again on redo', () => {
     const many = Array.from({ length: CANVAS_POINT_LIMIT }, () => ({ x: 0.1, y: 0.1 }));
     const t = turn();
-    expect(t.addStroke(1, 'brush', 0, 4, many)).toBe(true);
+    expect(t.addStroke(1, 'brush', INK, 4, many)).toBe(true);
     // Full: nothing more fits.
-    expect(t.addStroke(2, 'brush', 0, 4, points)).toBe(false);
+    expect(t.addStroke(2, 'brush', INK, 4, points)).toBe(false);
 
     t.undo();
-    expect(t.addStroke(2, 'brush', 0, 4, points)).toBe(true);
+    expect(t.addStroke(2, 'brush', INK, 4, points)).toBe(true);
   });
 });

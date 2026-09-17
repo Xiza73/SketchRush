@@ -116,6 +116,18 @@ export const UndoIcon = (props: IconProps) => (
   </svg>
 );
 
+export const SquareIcon = (props: IconProps) => (
+  <svg {...svgProps(props)}>
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+  </svg>
+);
+
+export const CircleIcon = (props: IconProps) => (
+  <svg {...svgProps(props)}>
+    <circle cx="12" cy="12" r="8" />
+  </svg>
+);
+
 /** `UndoIcon` mirrored, so the pair reads as one gesture in both directions. */
 export const RedoIcon = (props: IconProps) => (
   <svg {...svgProps(props)}>
