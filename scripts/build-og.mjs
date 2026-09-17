@@ -41,15 +41,25 @@ const T = {
   ink3: '#8a847b',
   line: '#2e2b27',
   accent: '#22d3ee',
-  /* The mark is the family's, shared with WordRush unchanged. */
-  markGreen: '#3fa66b',
-  markYellow: '#e5b537',
-  markCream: '#f3efe8',
+  /* The mark: a pencil, cream on the dark badge, tip in the accent. */
+  markBody: '#f3efe8',
+  markTip: '#22d3ee',
+  badge: '#1c1a17',
   /* Inks for the doodle, which sits on white paper and so uses light values. */
   paperInk: '#1c1a17',
   paperAccent: '#0e7490',
   paperRed: '#b33a2b',
 };
+
+/**
+ * The mark, in the same two paths the app and the favicon use. Drawn corner to
+ * corner on purpose: a thin diagonal is the first thing to die at 16 px, and
+ * this shape has to hold up from a browser tab to a 1200 px card.
+ */
+const mark = (size, body, tip) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 64 64">` +
+  `<path d="M42 2 L62 22 L24 60 L2 62 L4 40 Z" fill="${body}"/>` +
+  `<path d="M4 40 L24 60 L2 62 Z" fill="${tip}"/></svg>`;
 
 /**
  * The house from the landing page's hero, on a 0..100 canvas. Reused rather
@@ -106,8 +116,6 @@ const html = (card) => `<!doctype html>
   }
 
   .brand { position: absolute; top: 66px; left: 80px; display: flex; align-items: center; gap: 16px; }
-  .mark { display: flex; gap: 6px; }
-  .mark i { display: block; width: 15px; height: 40px; border-radius: 5px; }
   .brand span {
     font-family: 'Bricolage Grotesque', sans-serif;
     font-weight: 800; font-size: 38px; letter-spacing: -0.02em; color: ${T.ink};
@@ -150,11 +158,7 @@ const html = (card) => `<!doctype html>
 </head>
 <body>
   <div class="brand">
-    <div class="mark">
-      <i style="background:${T.markGreen}"></i>
-      <i style="background:${T.markYellow}"></i>
-      <i style="background:${T.markCream}"></i>
-    </div>
+    ${mark(40, T.markBody, T.markTip)}
     <span>SketchRush</span>
   </div>
 
@@ -226,6 +230,39 @@ try {
     );
     console.log(`og-${card.lang}.png  ${card.alt}`);
   }
+
+  /*
+   * The app icons come from here too. They are the same mark on the same badge,
+   * and the last time they did not they were left behind: the tab showed one
+   * logo and the home screen another. One script, one source, no drift.
+   */
+  for (const [name, size] of [
+    ['apple-touch-icon.png', 180],
+    ['icon-512.png', 512],
+  ]) {
+    const page = join(work, `${name}.html`);
+    writeFileSync(
+      page,
+      `<!doctype html><style>*{margin:0;padding:0}html,body{width:${size}px;height:${size}px;overflow:hidden}` +
+        `.b{width:${size}px;height:${size}px;background:${T.badge};border-radius:22%;display:grid;place-items:center}</style>` +
+        `<div class="b">${mark(Math.round(size * 0.78), T.markBody, T.markTip)}</div>`,
+    );
+    execFileSync(
+      chrome,
+      [
+        '--headless=new',
+        '--disable-gpu',
+        '--hide-scrollbars',
+        `--window-size=${size},${size}`,
+        '--virtual-time-budget=3000',
+        `--screenshot=${join(OUT_DIR, name)}`,
+        `file:///${page.replace(/\\/g, '/')}`,
+      ],
+      { stdio: 'ignore' },
+    );
+    console.log(`${name}  ${size}x${size}`);
+  }
+
   console.log(`\n${WIDTH}x${HEIGHT} -> frontend/public/`);
   console.log(
     `\nThe cards say "${DOMAIN}". frontend/index.html has to agree, and so does\n` +
