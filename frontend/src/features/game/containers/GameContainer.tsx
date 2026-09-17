@@ -30,6 +30,7 @@ import { GuessPanel } from '../components/GuessPanel';
 import { PlayersPanel, type PanelPlayer } from '../components/PlayersPanel';
 import { TurnHeader } from '../components/TurnHeader';
 import { WordChoices } from '../components/WordChoices';
+import { useDrawShortcuts } from '../hooks/useDrawShortcuts';
 import { useTurnStore } from '../stores/useTurnStore';
 
 interface GameContainerProps {
@@ -46,6 +47,7 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
   const choices = useTurnStore((state) => state.choices);
   const feed = useTurnStore((state) => state.feed);
   const iGuessed = useTurnStore((state) => state.iGuessed);
+  const canRedo = useTurnStore((state) => state.undone.length > 0);
 
   const lobby = useLobbyStore((state) => state.lobby);
   const standings = useResultsStore((state) => state.roundEnd?.standings ?? null);
@@ -57,7 +59,7 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
   const [size, setSize] = useState(10);
 
   const { chooseWord, pending: choosing } = useChooseWord();
-  const { sendStroke, sendFill, sendUndo, sendClear } = useDraw();
+  const { sendStroke, sendFill, sendUndo, sendRedo, sendClear } = useDraw();
   const { submitGuess, pending: guessing } = useSubmitGuess();
 
   // The turn is over: the reveal and the table live on the results screen.
@@ -83,6 +85,8 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
       delete root.dataset.keyboard;
     };
   }, [viewport.keyboardOpen]);
+
+  useDrawShortcuts({ enabled: iAmDrawer && drawing, onUndo: sendUndo, onRedo: sendRedo });
 
   const secondsLeft = turn && turn.deadlineAt > 0 ? Math.max(0, (turn.deadlineAt - now) / 1000) : 0;
   const chooseSecondsLeft = choices ? Math.max(0, (choices.deadline - now) / 1000) : 0;
@@ -221,6 +225,8 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
             onColor={setColor}
             onSize={setSize}
             onUndo={sendUndo}
+            onRedo={sendRedo}
+            canRedo={canRedo}
             onClear={sendClear}
           />
         )}

@@ -14,7 +14,7 @@ paths:
   touches `socket` directly. The instance is imported only from
   `@/core/session/lib/socket`, and only from `api/` or `stores/`.
 - **Pushed events** (`lobby:update`, `turn:start`, `turn:choices`, `turn:hint`,
-  `turn:end`, `draw:stroke`, `draw:fill`, `draw:undo`, `draw:clear`,
+  `turn:end`, `draw:stroke`, `draw:fill`, `draw:undo`, `draw:redo`, `draw:clear`,
   `player:guessed`, `chat:message`, `player:left`, `game:end`, `reaction:show`)
   are store-driven: subscribe once in the store's `bind()` action, guarded by a
   module-level flag so StrictMode's double-invoke cannot double-subscribe.

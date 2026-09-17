@@ -464,6 +464,7 @@ export interface ClientToServerEvents {
   'draw:stroke': (payload: StrokePayload, ack?: (r: EmptyAck) => void) => void;
   'draw:fill': (payload: FillPayload, ack?: (r: EmptyAck) => void) => void;
   'draw:undo': (ack?: (r: EmptyAck) => void) => void;
+  'draw:redo': (ack?: (r: EmptyAck) => void) => void;
   'draw:clear': (ack?: (r: EmptyAck) => void) => void;
   'game:guess': (payload: GuessPayload, ack: (r: Ack<GuessAck>) => void) => void;
   'reaction:send': (payload: ReactionPayload, ack?: (r: EmptyAck) => void) => void;
@@ -538,6 +539,12 @@ export interface ServerToClientEvents {
   'draw:stroke': (payload: StrokePayload) => void;
   'draw:fill': (payload: FillPayload) => void;
   'draw:undo': () => void;
+  /**
+   * Puts back what `draw:undo` took off, carrying the operation itself so a
+   * watcher can append it without asking for the canvas again. Never sent when
+   * there was nothing to put back.
+   */
+  'draw:redo': (payload: DrawOp) => void;
   'draw:clear': () => void;
   'player:guessed': (payload: GuessedPayload) => void;
   'chat:message': (payload: ChatMessagePayload) => void;

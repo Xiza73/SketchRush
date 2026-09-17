@@ -1,4 +1,4 @@
-import { Turn } from './turn.entity';
+import { CANVAS_POINT_LIMIT, Turn } from './turn.entity';
 
 const T0 = 1_000_000;
 
@@ -189,12 +189,67 @@ describe('Turn · the canvas', () => {
     expect(t.canvas[0]?.kind).toBe('stroke');
   });
 
-  it('leaves a clear behind rather than an empty list', () => {
+  it('marks a clear rather than emptying the list', () => {
     // A late joiner replays the buffer; without the marker they would repaint
-    // whatever was on screen before the clear.
+    // whatever was on screen before the clear. What it covers is kept, so undo
+    // can take the clear back.
     const t = turn();
     t.addStroke(1, 'brush', 0, 4, points);
     t.clear();
-    expect(t.canvas).toEqual([{ kind: 'clear', id: expect.any(Number) }]);
+    expect(t.canvas.map((op) => op.kind)).toEqual(['stroke', 'clear']);
+  });
+
+  it('says whether undo had anything to undo', () => {
+    const t = turn();
+    expect(t.undo()).toBe(false);
+    t.addStroke(1, 'brush', 0, 4, points);
+    expect(t.undo()).toBe(true);
+  });
+
+  it('puts back what undo took, in order', () => {
+    const t = turn();
+    t.addStroke(1, 'brush', 0, 4, points);
+    t.addFill(3, { x: 0.5, y: 0.5 });
+    t.undo();
+    t.undo();
+    expect(t.canvas).toHaveLength(0);
+
+    // Returns the operation itself, so the caller can tell the room what came
+    // back rather than making every screen re-fetch the canvas to find out.
+    expect(t.redo()).toMatchObject({ kind: 'stroke' });
+    expect(t.canvas.map((op) => op.kind)).toEqual(['stroke']);
+    expect(t.redo()).toMatchObject({ kind: 'fill' });
+    expect(t.canvas.map((op) => op.kind)).toEqual(['stroke', 'fill']);
+    expect(t.redo()).toBeNull();
+  });
+
+  it('takes a clear back, with everything it covered', () => {
+    const t = turn();
+    t.addStroke(1, 'brush', 0, 4, points);
+    t.clear();
+    t.undo();
+    expect(t.canvas.map((op) => op.kind)).toEqual(['stroke']);
+  });
+
+  it('drops the redo stack the moment something new is drawn', () => {
+    // Every editor works this way, and the alternative is a redo that
+    // resurrects a line from before the one just drawn.
+    const t = turn();
+    t.addStroke(1, 'brush', 0, 4, points);
+    t.undo();
+    t.addStroke(2, 'brush', 0, 4, points);
+    expect(t.redo()).toBeNull();
+    expect(t.canvas).toHaveLength(1);
+  });
+
+  it('gives the points back on undo and takes them again on redo', () => {
+    const many = Array.from({ length: CANVAS_POINT_LIMIT }, () => ({ x: 0.1, y: 0.1 }));
+    const t = turn();
+    expect(t.addStroke(1, 'brush', 0, 4, many)).toBe(true);
+    // Full: nothing more fits.
+    expect(t.addStroke(2, 'brush', 0, 4, points)).toBe(false);
+
+    t.undo();
+    expect(t.addStroke(2, 'brush', 0, 4, points)).toBe(true);
   });
 });

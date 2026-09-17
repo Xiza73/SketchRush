@@ -165,7 +165,8 @@ export const en: Dictionary = {
     colorNumber: (n) => `Colour ${n}`,
     brushSize: 'Brush size',
     brushSizeNumber: (n) => `Size ${n}`,
-    undo: 'Undo',
+    undo: 'Undo (Ctrl+Z)',
+    redo: 'Redo (Ctrl+Y)',
     clearCanvas: 'Clear the canvas',
     /* The table */
     drawingOrder: 'Drawing order',

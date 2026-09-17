@@ -36,9 +36,18 @@ export class DrawUseCase {
     this.bus.publish({ roomCode, event: 'draw:fill', payload });
   }
 
+  // Both are silent when there was nothing to do. An empty broadcast would make
+  // every other screen bump its repaint generation and redraw the whole canvas
+  // to arrive at the picture it already had.
   undo(roomCode: string, playerId: string): void {
-    this.requireDrawing(roomCode, playerId).undo();
+    if (!this.requireDrawing(roomCode, playerId).undo()) return;
     this.bus.publish({ roomCode, event: 'draw:undo', payload: undefined });
+  }
+
+  redo(roomCode: string, playerId: string): void {
+    const restored = this.requireDrawing(roomCode, playerId).redo();
+    if (!restored) return;
+    this.bus.publish({ roomCode, event: 'draw:redo', payload: restored });
   }
 
   clear(roomCode: string, playerId: string): void {

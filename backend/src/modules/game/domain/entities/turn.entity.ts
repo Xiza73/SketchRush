@@ -68,6 +68,12 @@ export class Turn {
    */
   private pendingHints: number[] = [];
   readonly canvas: DrawOp[] = [];
+  /**
+   * Operations undo has taken off the canvas, newest last. Redo pops from here;
+   * drawing anything new empties it. They still count against the point cap
+   * only while they are on the canvas, never while they sit here.
+   */
+  private readonly undone: DrawOp[] = [];
   private nextOpId = 1;
   /** Points held in `canvas`, kept as a running total so the cap is cheap. */
   private points = 0;
@@ -198,6 +204,7 @@ export class Turn {
    */
   addStroke(id: number, tool: StrokeTool, color: number, size: number, points: Point[]): boolean {
     if (this.points + points.length > CANVAS_POINT_LIMIT) return false;
+    this.dropUndone();
     this.points += points.length;
     const last = this.canvas[this.canvas.length - 1];
     if (last?.kind === 'stroke' && last.id === id) {
@@ -211,26 +218,65 @@ export class Turn {
 
   addFill(color: number, at: Point): boolean {
     if (this.points + 1 > CANVAS_POINT_LIMIT) return false;
+    this.dropUndone();
     this.points += 1;
     this.canvas.push({ kind: 'fill', id: this.nextOpId++, color, at });
     return true;
   }
 
-  /** Undo drops the last operation, whatever kind it was. */
-  undo(): void {
+  /**
+   * Undo drops the last operation, whatever kind it was, and keeps it.
+   *
+   * Returns false when there was nothing to drop, so the caller does not
+   * broadcast a change that did not happen.
+   */
+  undo(): boolean {
     const dropped = this.canvas.pop();
-    if (dropped?.kind === 'stroke') this.points -= dropped.points.length;
-    else if (dropped?.kind === 'fill') this.points -= 1;
+    if (!dropped) return false;
+    this.points -= this.costOf(dropped);
+    this.undone.push(dropped);
+    return true;
   }
 
   /**
-   * A cleared canvas is still a canvas: the marker is pushed rather than the
-   * list simply emptied, so replaying the buffer paints over whatever a late
-   * joiner already had instead of leaving it there.
+   * Puts back the last undone operation and returns it, so the caller can tell
+   * the room *what* came back rather than making every screen re-fetch the
+   * canvas to find out. Null when there was none, or when it no longer fits.
+   */
+  redo(): DrawOp | null {
+    const restored = this.undone.pop();
+    if (!restored) return null;
+    const cost = this.costOf(restored);
+    if (this.points + cost > CANVAS_POINT_LIMIT) return null;
+    this.points += cost;
+    this.canvas.push(restored);
+    return restored;
+  }
+
+  /**
+   * A cleared canvas is still a canvas: the marker is pushed and **everything
+   * before it is kept**, because a clear is an operation like any other and
+   * undo has to be able to take it back. The painter already treats the marker
+   * as "paint over all of this", so replaying the buffer looks identical to a
+   * late joiner; it only costs the bytes of the strokes it covers, which the
+   * point cap still counts.
    */
   clear(): void {
-    this.canvas.length = 0;
-    this.points = 0;
+    this.dropUndone();
+    this.points += 1;
     this.canvas.push({ kind: 'clear', id: this.nextOpId++ });
+  }
+
+  private costOf(op: DrawOp): number {
+    return op.kind === 'stroke' ? op.points.length : 1;
+  }
+
+  /**
+   * Drawing something new ends the future that undo was holding on to. Every
+   * editor works this way and the alternative — a redo that resurrects a line
+   * from before the one you just drew — is nobody's idea of redo.
+   */
+  private dropUndone(): void {
+    this.undone.length = 0;
   }
 }

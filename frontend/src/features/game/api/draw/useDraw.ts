@@ -33,10 +33,18 @@ export const useDraw = () => {
     socket.emit('draw:undo');
   }, []);
 
+  const sendRedo = useCallback(() => {
+    // Nothing on this screen's stack means nothing on the server's either —
+    // they are emptied by the same events — so the message is not worth sending.
+    if (useTurnStore.getState().undone.length === 0) return;
+    useTurnStore.getState().redoLocal();
+    socket.emit('draw:redo');
+  }, []);
+
   const sendClear = useCallback(() => {
     useTurnStore.getState().clearLocal();
     socket.emit('draw:clear');
   }, []);
 
-  return { sendStroke, sendFill, sendUndo, sendClear };
+  return { sendStroke, sendFill, sendUndo, sendRedo, sendClear };
 };

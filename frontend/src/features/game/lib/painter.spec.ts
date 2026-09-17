@@ -42,6 +42,32 @@ const W = 100;
 const H = 100;
 
 describe('paint', () => {
+  /**
+   * Why redo does not bump the repaint generation.
+   *
+   * Undo takes the last operation off and repaints from scratch, leaving the
+   * cursor on the new last stroke with that stroke still open. Redo then puts
+   * an operation back on the end — an extension of what is already painted —
+   * and the cursor has to carry on into it without being reset. If it did not,
+   * redo would have to repaint the whole canvas to show one line again.
+   */
+  it('carries on into an operation appended after a repaint', () => {
+    const ctx = fakeContext();
+    const afterUndo = [stroke(1, [0, 0], [0.5, 0.5])];
+    const cursor = paint(ctx, afterUndo, START, W, H);
+    expect(cursor).toEqual({ op: 0, point: 2 });
+
+    // Redo puts stroke 2 back. The first stroke must not be drawn again.
+    const afterRedo = [...afterUndo, stroke(2, [0.8, 0.8], [0.9, 0.9])];
+    ctx.calls.length = 0;
+    const next = paint(ctx, afterRedo, cursor, W, H);
+
+    expect(ctx.calls).toContain('moveTo 80,80');
+    expect(ctx.calls).toContain('lineTo 90,90');
+    expect(ctx.calls.filter((call) => call.startsWith('moveTo'))).toHaveLength(1);
+    expect(next).toEqual({ op: 1, point: 2 });
+  });
+
   it('draws a whole stroke and stops on it, because more chunks may follow', () => {
     const ctx = fakeContext();
     const ops = [stroke(1, [0, 0], [0.5, 0.5])];

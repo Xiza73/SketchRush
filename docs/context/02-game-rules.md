@@ -69,8 +69,22 @@ Tools, all of them on the drawer's screen only:
 - **A colour palette**, the same swatches for everyone.
 - **Eraser.**
 - **Fill** (bucket).
-- **Undo**, one stroke at a time.
+- **Undo** and **redo**, one operation at a time, on the buttons or on
+  `Ctrl+Z` / `Ctrl+Y` (`Cmd+Shift+Z` also redoes, for the other habit).
 - **Clear**, the whole canvas.
+
+Undo and redo are the server's, not the screen's. The canvas is replayed to
+anyone who reloads or joins late, so a stack that lived only in the drawer's
+browser would disagree with what everybody else is looking at the moment either
+happens. Drawing anything new ends the future redo was holding, exactly as every
+editor does — a redo that resurrects a line from before the one just drawn is
+nobody's idea of redo.
+
+A **clear covers the drawing rather than deleting it**: the marker is pushed and
+what it hides is kept, so undo can take a clear back. It is the operation people
+most want back and the one it would be cruellest to lose. The kept strokes still
+count against the canvas cap, which is what stops a drawer clearing their way
+past it.
 
 Strokes travel as points, batched every ~50 ms, not as a finished stroke on
 mouse-up: waiting for the pen to lift makes a drawing game feel broken. The

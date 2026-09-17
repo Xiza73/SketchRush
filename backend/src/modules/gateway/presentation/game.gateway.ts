@@ -284,6 +284,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return OK_EMPTY;
   }
 
+  @SubscribeMessage('draw:redo')
+  onRedo(@ConnectedSocket() client: GameSocket): EmptyAck {
+    const { roomCode, playerId } = this.requireSession(client);
+    this.draw.redo(roomCode, playerId);
+    return OK_EMPTY;
+  }
+
   @SubscribeMessage('draw:clear')
   onClear(@ConnectedSocket() client: GameSocket): EmptyAck {
     const { roomCode, playerId } = this.requireSession(client);

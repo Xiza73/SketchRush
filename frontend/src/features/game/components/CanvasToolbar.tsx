@@ -3,6 +3,7 @@ import {
   BrushIcon,
   BucketIcon,
   EraserIcon,
+  RedoIcon,
   TrashIcon,
   UndoIcon,
 } from '@/shared/components/icons/GameIcons';
@@ -20,6 +21,9 @@ interface CanvasToolbarProps {
   onColor: (index: number) => void;
   onSize: (size: number) => void;
   onUndo: () => void;
+  onRedo: () => void;
+  /** Greys out the redo button when there is nothing to put back. */
+  canRedo: boolean;
   onClear: () => void;
 }
 
@@ -36,6 +40,8 @@ export const CanvasToolbar = ({
   onColor,
   onSize,
   onUndo,
+  onRedo,
+  canRedo,
   onClear,
 }: CanvasToolbarProps) => {
   const t = useT();
@@ -125,6 +131,15 @@ export const CanvasToolbar = ({
           className={cn(toolButton, 'border-line bg-surface-2 text-ink-2 hover:text-ink')}
         >
           <UndoIcon size={18} />
+        </button>
+        <button
+          type="button"
+          disabled={disabled || !canRedo}
+          aria-label={t.game.redo}
+          onClick={onRedo}
+          className={cn(toolButton, 'border-line bg-surface-2 text-ink-2 hover:text-ink')}
+        >
+          <RedoIcon size={18} />
         </button>
         <button
           type="button"

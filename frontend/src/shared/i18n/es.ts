@@ -150,7 +150,8 @@ export const es = {
     colorNumber: (n: number) => `Color ${n}`,
     brushSize: 'Grosor del trazo',
     brushSizeNumber: (n: number) => `Grosor ${n}`,
-    undo: 'Deshacer',
+    undo: 'Deshacer (Ctrl+Z)',
+    redo: 'Rehacer (Ctrl+Y)',
     clearCanvas: 'Borrar todo',
     /* The table */
     drawingOrder: 'Orden de dibujo',
