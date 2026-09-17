@@ -221,7 +221,8 @@ export const en: Dictionary = {
     guessedAt: (percent, place) => `${ordinal(place)} · ${percent}% left`,
     /* A round is one full rotation; a turn is one person drawing. The payload
        counts turns, so the screen counts turns. */
-    roundEnd: (turn, total) => `End of turn ${turn} of ${total}`,
+    roundEnd: (round, totalRounds, turnInRound, turnsPerRound) =>
+      `Round ${round} of ${totalRounds} · turn ${turnInRound} of ${turnsPerRound}`,
     gameOver: 'Game over',
     nextRoundIn: 'Next turn in',
     guessedCount: (guessed, guessers) => `${guessed} of ${guessers} got it`,
@@ -234,7 +235,8 @@ export const en: Dictionary = {
     timeNote: (initial) =>
       `Time = the percentage of the turn's clock (${initial} s) left when you got it. One point per 1%.`,
     accumulated: 'Running total',
-    afterRounds: (played, total) => `after ${played} of ${total} turns`,
+    afterRounds: (played, total) =>
+      played === total ? `after ${total} rounds` : `after ${played} of ${total} rounds`,
     finalTable: 'Final table',
     tiebreak: 'Tie-break: more turns guessed, then fewer seconds thinking.',
     decidedByTurns: (total) => `Tied on ${total}: more turns guessed wins it.`,

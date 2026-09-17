@@ -29,6 +29,10 @@ const standing = (over: Partial<Standing> & { playerId: string }): Standing => (
 const payload = (over: Partial<TurnEndPayload> = {}): TurnEndPayload => ({
   turn: 2,
   totalTurns: 2,
+  round: 1,
+  totalRounds: 1,
+  turnInRound: 2,
+  turnsPerRound: 2,
   word: 'plato',
   breakdown: [],
   standings: [],

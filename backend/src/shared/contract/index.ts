@@ -303,6 +303,12 @@ export interface Standing {
 export interface TurnEndPayload {
   turn: number;
   totalTurns: number;
+  /** Which round this turn belonged to, and how many the room chose. */
+  round: number;
+  totalRounds: number;
+  /** This turn's place inside its own round, and how many that round holds. */
+  turnInRound: number;
+  turnsPerRound: number;
   word: string;
   breakdown: TurnBreakdownRow[];
   standings: Standing[];
@@ -423,7 +429,28 @@ export interface GuessAck {
   points: number;
 }
 
+/**
+ * The server's clock, answered as fast as it can be.
+ *
+ * Every deadline in this game is an absolute server timestamp, which keeps two
+ * counters from drifting apart — but only if both machines agree on what *now*
+ * is, and they do not. A browser clock is routinely seconds off; one measured
+ * 4.5 s ahead of the server, which showed the turn timer sitting dead on zero
+ * for four and a half seconds at the end of every turn. A client whose clock
+ * runs the other way is worse: it gets cut off mid-word while its own screen
+ * still shows time left.
+ *
+ * So the client asks once per connection, halves the round trip, and derives
+ * every countdown from the offset. Nothing about the deadline changes; only the
+ * client's idea of the present does.
+ */
+export interface TimeSyncAck {
+  /** Server epoch ms, read the moment the request was handled. */
+  now: number;
+}
+
 export interface ClientToServerEvents {
+  'time:sync': (ack: (r: Ack<TimeSyncAck>) => void) => void;
   'room:create': (payload: CreateRoomPayload, ack: (r: Ack<SessionAck>) => void) => void;
   'room:join': (payload: JoinRoomPayload, ack: (r: Ack<SessionAck>) => void) => void;
   'room:rejoin': (payload: RejoinPayload, ack: (r: Ack<SessionAck>) => void) => void;

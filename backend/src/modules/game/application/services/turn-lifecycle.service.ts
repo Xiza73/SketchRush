@@ -156,9 +156,17 @@ export class TurnLifecycleService {
     // than dealing turns to somebody drawing for nobody.
     const over = game.isOver() || room.connectedPlayers().length < ROOM_LIMITS.minPlayers;
     if (!abandoned) {
+      // `turn 4 of 6` is true and tells a player nothing: they chose *rounds*,
+      // and the round is what the table is scored against. The absolute numbers
+      // stay for the progress bar; the sentence is built from the round.
+      const turnsPerRound = Math.max(1, game.order.length);
       const payload: TurnEndPayload = {
         turn: turn.turn,
         totalTurns: game.totalTurns,
+        round: turn.round,
+        totalRounds: game.totalRounds,
+        turnInRound: ((turn.turn - 1) % turnsPerRound) + 1,
+        turnsPerRound,
         word: turn.word ?? '',
         breakdown,
         standings,

@@ -14,6 +14,11 @@ export interface StandingViewModel extends Standing {
 export interface TurnResultsViewModel {
   turn: number;
   totalTurns: number;
+  /** The round this belonged to, which is what the room actually chose. */
+  round: number;
+  totalRounds: number;
+  turnInRound: number;
+  turnsPerRound: number;
   word: string;
   rows: BreakdownRowViewModel[];
   standings: StandingViewModel[];
@@ -87,6 +92,10 @@ export const toTurnResultsViewModel = (
   return {
     turn: payload.turn,
     totalTurns: payload.totalTurns,
+    round: payload.round,
+    totalRounds: payload.totalRounds,
+    turnInRound: payload.turnInRound,
+    turnsPerRound: payload.turnsPerRound,
     word: payload.word.toUpperCase(),
     rows,
     standings,

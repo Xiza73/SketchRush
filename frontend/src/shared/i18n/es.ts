@@ -206,7 +206,8 @@ export const es = {
     guessedAt: (percent: number, place: number) => `${place}.º · le sobraba el ${percent} %`,
     /* A round is one full rotation; a turn is one person drawing. The payload
        counts turns, so the screen counts turns. */
-    roundEnd: (turn: number, total: number) => `Fin del turno ${turn} de ${total}`,
+    roundEnd: (round: number, totalRounds: number, turnInRound: number, turnsPerRound: number) =>
+      `Ronda ${round} de ${totalRounds} · turno ${turnInRound} de ${turnsPerRound}`,
     gameOver: 'Fin de la partida',
     nextRoundIn: 'Siguiente turno en',
     guessedCount: (guessed: number, guessers: number) =>
@@ -220,7 +221,8 @@ export const es = {
     timeNote: (initial: number) =>
       `Tiempo = porcentaje del reloj del turno (${initial} s) que sobraba al acertar. Un punto por cada 1 %.`,
     accumulated: 'Acumulado',
-    afterRounds: (played: number, total: number) => `tras ${played} de ${total} turnos`,
+    afterRounds: (played: number, total: number) =>
+      played === total ? `tras ${total} rondas` : `tras ${played} de ${total} rondas`,
     finalTable: 'Tabla final',
     tiebreak: 'Desempate: más turnos acertados, luego menos segundos pensando.',
     decidedByTurns: (total: number) =>

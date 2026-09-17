@@ -9,7 +9,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { type Ack, type GuessAck, type SessionAck } from '@shared/contract';
+import { type Ack, type GuessAck, type SessionAck, type TimeSyncAck } from '@shared/contract';
 import { CLOCK, type Clock } from '@shared/domain/clock';
 import { DomainException } from '@shared/domain/domain.exception';
 import { OutboundEvent, RoomEventsBus } from '@shared/events/room-events.bus';
@@ -111,6 +111,20 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
     const session = this.sessions.detach(client);
     if (session) this.markDisconnected.execute(session.roomCode, session.playerId);
+  }
+
+  // ----------------------------------------------------------------- clock
+
+  /**
+   * The server's `now`, so a client can stop trusting its own.
+   *
+   * Deliberately the cheapest handler here: no session, no rate limit, no work
+   * before reading the clock. Anything between the request arriving and this
+   * line is measurement error the caller cannot see or subtract.
+   */
+  @SubscribeMessage('time:sync')
+  onTimeSync(): Ack<TimeSyncAck> {
+    return { ok: true, now: this.clock.now() };
   }
 
   // ---------------------------------------------------------------- rooms

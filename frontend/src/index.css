@@ -296,3 +296,70 @@
     opacity: 0;
   }
 }
+
+/*
+ * The drawing is bounded by height, never by column width: the coordinates are
+ * normalised, so a sheet of a different shape draws a different picture. The
+ * width is capped at whatever 4:3 allows in the height budget, and the height
+ * follows from the aspect ratio.
+ *
+ * `--app-vh` is what the page can actually see, which on a phone with a
+ * keyboard up is not what `100svh` reports — see `useVisualViewport`. The
+ * fallback keeps this honest on a browser too old to have the API.
+ *
+ * `--canvas-reserve` is everything else on the screen: the top bar, the turn
+ * header, the toolbar, the gaps. It shrinks when the keyboard hides the rest,
+ * which is what lets the letters, the drawing and the box share a small screen.
+ */
+.canvas-bound {
+  max-width: calc((var(--app-vh, 100svh) - var(--canvas-reserve, 19rem)) * 4 / 3);
+}
+
+/*
+ * A phone keyboard leaves about 500 px of screen, and the turn needs three
+ * things in it: the letters, the drawing and the box. The top bar — theme,
+ * language, leave — is worth none of that room while somebody is typing against
+ * a clock, so the game screen folds it away and puts it back the moment the
+ * keyboard closes. Only the game screen sets the attribute.
+ */
+[data-keyboard='open'] .app-topbar {
+  display: none;
+}
+
+/*
+ * The game screen with a keyboard up.
+ *
+ * Normally the page is as tall as its content and the browser scrolls. That
+ * breaks here: the browser's idea of "scroll the focused input into view" takes
+ * the drawing and the letters off screen with it, and a guesser is left typing
+ * at a word they cannot see. So while the keyboard is up the screen stops being
+ * a scrolling page and becomes a box of exactly the height that is visible,
+ * with the drawing taking whatever the header and the box do not.
+ */
+[data-keyboard='open'] .game-screen {
+  /* Beats the `flex-1` this carries for the normal layout: a growing flex item
+     stretches to its parent and ignores its own height, which is the one thing
+     this rule needs it to respect. */
+  flex: none;
+  height: var(--app-vh, 100svh);
+  overflow: hidden;
+  /* The drawing takes the remaining row; the box takes only what it needs.
+     Without this the rows size to their content and overflow the box above,
+     which is the whole thing this rule exists to stop. */
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+/*
+ * Height first, width second — the reverse of the desktop rule. The drawing
+ * takes the leftover row and derives its width from 4:3, which is the only way
+ * it can shrink to an arbitrary remainder without changing shape. The
+ * coordinates are normalised, so a sheet of a different shape would draw a
+ * different picture on this screen than on everybody else's.
+ */
+[data-keyboard='open'] .canvas-bound {
+  flex: 1 1 0;
+  min-height: 0;
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+}

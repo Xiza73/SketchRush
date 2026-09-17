@@ -44,7 +44,12 @@ export const ResultsPage = () => {
                 gameEnd
                   ? t.results.gameOver
                   : roundEnd
-                    ? t.results.roundEnd(roundEnd.turn, roundEnd.totalTurns)
+                    ? t.results.roundEnd(
+                        roundEnd.round,
+                        roundEnd.totalRounds,
+                        roundEnd.turnInRound,
+                        roundEnd.turnsPerRound,
+                      )
                     : null,
               ]}
             />

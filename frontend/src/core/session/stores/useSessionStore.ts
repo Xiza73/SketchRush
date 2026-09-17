@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { leaveRoom as emitLeave } from '@/core/session/api/leave-room/leaveRoom';
 import { rejoinRoom } from '@/core/session/api/rejoin-room/rejoinRoom';
 import { ensureConnected, socket } from '@/core/session/lib/socket';
+import { syncServerClock } from '@/core/session/lib/serverClock';
 import {
   toStoredSession,
   type ConnectionStatus,
@@ -104,6 +105,9 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
     socket.on('connect', () => {
       set({ connection: 'connected' });
+      // Before anything reads a deadline: this machine's clock is not the one
+      // the deadlines were written against, and it can be seconds out.
+      void syncServerClock();
       // Every (re)connection re-attaches to the room; `rejoin` is single-flight.
       if (get().session) void get().rejoin();
     });

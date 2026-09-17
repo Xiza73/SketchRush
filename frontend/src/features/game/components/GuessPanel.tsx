@@ -18,6 +18,8 @@ interface GuessPanelProps {
   iGuessed: boolean;
   iAmDrawer: boolean;
   pending: boolean;
+  /** Screen is short — usually a keyboard. The feed gives up its room first. */
+  compact?: boolean;
   onGuess: (text: string) => Promise<{ correct: boolean; close: boolean }>;
 }
 
@@ -37,6 +39,7 @@ export const GuessPanel = ({
   iGuessed,
   iAmDrawer,
   pending,
+  compact = false,
   onGuess,
 }: GuessPanelProps) => {
   const t = useT();
@@ -94,7 +97,13 @@ export const GuessPanel = ({
         // Typing here is the only way a guesser scores, so while the box is live
         // the whole panel says so. The accent carries action in this family; it
         // never touches a right/wrong state, and none of those live up here.
-        'flex min-h-0 flex-1 flex-col rounded-2xl border bg-surface transition-colors',
+        // `overflow-hidden` is load-bearing: the header below carries its own
+        // background, and without clipping its square corners sit outside this
+        // rounded border — visible as a notch wherever the two meet.
+        'flex min-h-0 flex-col overflow-hidden rounded-2xl border bg-surface transition-colors',
+        // Grows to fill the column normally; with a keyboard up it must take
+        // only what the box needs, so the drawing keeps the rest.
+        compact ? 'flex-none' : 'flex-1',
         canGuess ? 'border-accent shadow-card' : 'border-line',
       )}
     >
@@ -102,6 +111,9 @@ export const GuessPanel = ({
         className={cn(
           'flex items-center justify-between border-b px-3.5 py-2.5 transition-colors',
           canGuess ? 'border-accent-soft bg-accent-soft' : 'border-line',
+          // The label explains the box; with a keyboard up the box is the only
+          // thing left on screen and explains itself.
+          compact && 'hidden',
         )}
       >
         <span className={cn('label', canGuess && 'text-accent')}>
@@ -115,7 +127,13 @@ export const GuessPanel = ({
       <ul
         ref={listRef}
         aria-live="polite"
-        className="m-0 flex max-h-70 min-h-30 flex-1 list-none flex-col gap-1 overflow-y-auto p-3"
+        className={cn(
+          'm-0 flex flex-1 list-none flex-col gap-1 overflow-y-auto p-3',
+          'max-h-70 min-h-30',
+          // The feed is history. On a screen with 500 px left it is the first
+          // thing to go, because the drawing in front of you is not history.
+          compact && 'hidden',
+        )}
       >
         {feed.length === 0 && (
           <li className="m-auto px-2 text-center text-sm text-ink-3">

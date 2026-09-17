@@ -109,7 +109,7 @@ export const ResultsContainer = ({ roomCode }: ResultsContainerProps) => {
         t={t}
         standings={results.standings}
         title={results.isFinal ? t.results.finalTable : t.results.accumulated}
-        subtitle={t.results.afterRounds(results.turn, results.totalTurns)}
+        subtitle={t.results.afterRounds(results.round, results.totalRounds)}
         showDetails={results.isFinal}
       />
     </div>

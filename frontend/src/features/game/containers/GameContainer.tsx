@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useSessionStore } from '@/core/session/stores/useSessionStore';
@@ -8,7 +8,9 @@ import { ReactionPicker } from '@/features/reactions/components/ReactionPicker';
 import { useResultsStore } from '@/features/results/stores/useResultsStore';
 import { PageLoading } from '@/shared/components/ui/PageState';
 import { useNow } from '@/shared/hooks/useNow';
+import { useVisualViewport } from '@/shared/hooks/useVisualViewport';
 import { useT } from '@/shared/i18n';
+import { cn } from '@/shared/lib/cn';
 import { resultsPath } from '@/shared/routes/paths';
 import { toast } from '@/shared/stores/useToastStore';
 
@@ -69,6 +71,18 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
   const drawing = turn !== null && !turn.choosing;
   // Only the clock on screen needs the frame loop; nothing is counting between turns.
   const now = useNow(200, turn !== null);
+  const viewport = useVisualViewport();
+
+  // Set from here rather than inside the hook: the top bar folds away on the
+  // game screen alone, and the lobby's inputs have all the room they need.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (viewport.keyboardOpen) root.dataset.keyboard = 'open';
+    else delete root.dataset.keyboard;
+    return () => {
+      delete root.dataset.keyboard;
+    };
+  }, [viewport.keyboardOpen]);
 
   const secondsLeft = turn && turn.deadlineAt > 0 ? Math.max(0, (turn.deadlineAt - now) / 1000) : 0;
   const chooseSecondsLeft = choices ? Math.max(0, (choices.deadline - now) / 1000) : 0;
@@ -140,15 +154,35 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
   };
 
   return (
-    <div className="grid flex-1 grid-cols-1 gap-4 px-4 py-4 sm:px-7 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
+    <div
+      // What the page can actually see, handed down to whoever needs to fit
+      // inside it. `--canvas-reserve` is everything on screen that is not the
+      // drawing; with a keyboard up the panels below are gone, so the drawing
+      // gets their share and the letters, the sheet and the box all survive on
+      // a phone. The desktop grid never reaches either rule.
+      style={
+        {
+          '--app-vh': `${viewport.height}px`,
+          '--canvas-reserve': viewport.keyboardOpen ? '11rem' : '19rem',
+        } as CSSProperties
+      }
+      className="game-screen grid flex-1 grid-cols-1 gap-4 px-4 py-4 sm:px-7 lg:grid-cols-[240px_minmax(0,1fr)_320px]"
+    >
       {/* On a phone the guess box comes straight after the canvas: it is the one
           control that has to be in reach, and the table can wait below it. */}
-      <aside className="order-3 flex flex-col gap-2.5 lg:order-1">
+      <aside
+        className={cn(
+          'order-3 flex flex-col gap-2.5 lg:order-1',
+          // Neither of these is worth a line of the screen while somebody is
+          // typing against a clock, and between them they are most of it.
+          viewport.keyboardOpen && 'hidden lg:flex',
+        )}
+      >
         {preview && <ScorePreviewCard t={t} preview={preview} settled={iGuessed} />}
         <PlayersPanel players={players} />
       </aside>
 
-      <main className="order-1 flex min-w-0 flex-col gap-2.5 lg:order-2">
+      <main className="order-1 flex min-h-0 min-w-0 flex-col gap-2.5 lg:order-2">
         <TurnHeader
           round={turn.round}
           totalRounds={turn.totalRounds}
@@ -195,6 +229,9 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
       <aside className="order-2 flex min-h-0 flex-col lg:order-3">
         <GuessPanel
           mode={lobby.settings.guessMode}
+          // The feed is the first thing to go when the screen shrinks: it is
+          // history, and the drawing in front of you is not.
+          compact={viewport.keyboardOpen}
           feed={feed}
           nameOf={nameOf}
           canGuess={!iAmDrawer && drawing && !iGuessed}

@@ -179,15 +179,11 @@ export const DrawingCanvas = ({
       ref={wrapRef}
       className={cn(
         // 4:3 is not negotiable — the coordinates are normalised, so a sheet
-        // that is a different shape on my screen draws a different picture. To
-        // bound it by height without breaking that, the *width* is capped at
-        // what 4:3 allows in the height budget, and the height follows.
-        //
-        // 19rem is everything else on the tallest version of this screen: the
-        // top bar, the turn header, the drawer's toolbar, the gaps and the page
-        // padding. Watchers have no toolbar and could afford more, but a canvas
-        // that is the same size for everyone is worth more than those pixels.
-        'relative mx-auto aspect-[4/3] w-full max-w-[calc((100svh-19rem)*4/3)] overflow-hidden rounded-2xl border border-line bg-white shadow-card',
+        // that is a different shape on my screen draws a different picture.
+        // `.canvas-bound` caps the width at what 4:3 allows in the height
+        // budget, and the height follows; the budget itself lives in CSS
+        // variables the screen sets, because it changes when a keyboard opens.
+        'canvas-bound relative mx-auto aspect-[4/3] w-full overflow-hidden rounded-2xl border border-line bg-white shadow-card',
         className,
       )}
     >
@@ -196,7 +192,12 @@ export const DrawingCanvas = ({
         role="img"
         aria-label={label}
         className={cn(
-          'absolute inset-0 h-full w-full touch-none',
+          'absolute inset-0 h-full w-full',
+          // Only the drawer's finger belongs to the canvas. `touch-none` on a
+          // watcher's screen swallows the scroll gesture over the largest
+          // element on the page, so on a phone they get stuck on a drawing they
+          // cannot even draw on.
+          interactive && 'touch-none',
           interactive && (tool === 'fill' ? 'cursor-pointer' : 'cursor-crosshair'),
         )}
         onPointerDown={onPointerDown}

@@ -37,7 +37,9 @@ export const TopBar = ({
       className={cn(
         // `pt` carries the status-bar / notch inset on top of its own padding;
         // the bar is the first thing under the top edge on every screen.
-        'flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-[calc(var(--spacing)*2+var(--safe-top))] pb-2 sm:px-7',
+        // `app-topbar` is the hook the game screen uses to fold this away while
+        // a phone keyboard is up; nothing here is worth a line of that screen.
+        'app-topbar flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-[calc(var(--spacing)*2+var(--safe-top))] pb-2 sm:px-7',
         !bare && 'border-b border-line bg-surface',
       )}
     >
