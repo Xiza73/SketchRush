@@ -52,14 +52,18 @@ const T = {
 };
 
 /**
- * The mark, in the same two paths the app and the favicon use. Drawn corner to
- * corner on purpose: a thin diagonal is the first thing to die at 16 px, and
- * this shape has to hold up from a browser tab to a 1200 px card.
+ * The mark, in the same two strokes the app and the favicon use.
+ *
+ * Round caps rather than a polygon, because that is the vocabulary everything
+ * else in this product is drawn in, and because a pencil silhouette is all acute
+ * angles. The nib is narrower than the barrel or the whole thing reads as a
+ * capsule, and both are fat because a thin diagonal dies at 16 px — this shape
+ * has to hold from a browser tab to a 1200 px card.
  */
 const mark = (size, body, tip) =>
-  `<svg width="${size}" height="${size}" viewBox="0 0 64 64">` +
-  `<path d="M42 2 L62 22 L24 60 L2 62 L4 40 Z" fill="${body}"/>` +
-  `<path d="M4 40 L24 60 L2 62 Z" fill="${tip}"/></svg>`;
+  `<svg width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" stroke-linecap="round">` +
+  `<path d="M48 16 L25 39" stroke="${body}" stroke-width="23"/>` +
+  `<path d="M18 46 L15 49" stroke="${tip}" stroke-width="17"/></svg>`;
 
 /**
  * The house from the landing page's hero, on a 0..100 canvas. Reused rather
