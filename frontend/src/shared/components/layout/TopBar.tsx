@@ -5,6 +5,7 @@ import { useT } from '@/shared/i18n';
 import { cn } from '@/shared/lib/cn';
 
 import { LangSegmented } from './LangSegmented';
+import { SoundToggle } from './SoundToggle';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -67,6 +68,7 @@ export const TopBar = ({
         ) : null}
         {actions}
         <LangSegmented />
+        <SoundToggle />
         <ThemeToggle />
         {leaveAction}
         {playerName ? (

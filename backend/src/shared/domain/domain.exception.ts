@@ -9,12 +9,18 @@ export class DomainException extends Error {
   constructor(
     public readonly code: ErrorCode,
     message?: string,
+    /** Seconds left of the wait this refusal is about; see `ErrorPayload`. */
+    public readonly retryAfterSeconds?: number,
   ) {
     super(message ?? ERROR_MESSAGES[code]);
     this.name = 'DomainException';
   }
 
   toPayload(): ErrorPayload {
-    return { code: this.code, message: this.message };
+    const payload: ErrorPayload = { code: this.code, message: this.message };
+    if (this.retryAfterSeconds !== undefined) {
+      payload.retryAfterSeconds = this.retryAfterSeconds;
+    }
+    return payload;
   }
 }

@@ -3,12 +3,16 @@ import { Input } from '@/shared/components/ui/Input';
 import { ROOM_LIMITS } from '@/shared/contract';
 import type { Dictionary } from '@/shared/i18n';
 
+import { KickedNotice } from './KickedNotice';
+
 interface InviteJoinCardProps {
   t: Dictionary;
   code: string;
   name: string;
   nameError: string | null;
   pending: boolean;
+  /** Seconds left of a kick block on this name; 0 when there is none. */
+  kickedSeconds: number;
   onNameChange: (name: string) => void;
   onSubmit: () => void;
   onCreateOwn: () => void;
@@ -25,6 +29,7 @@ export const InviteJoinCard = ({
   name,
   nameError,
   pending,
+  kickedSeconds,
   onNameChange,
   onSubmit,
   onCreateOwn,
@@ -74,7 +79,15 @@ export const InviteJoinCard = ({
         ) : null}
       </div>
 
-      <Button type="submit" size="lg" loading={pending} className="w-full">
+      {kickedSeconds > 0 ? <KickedNotice message={t.home.kickedWait(kickedSeconds)} /> : null}
+
+      <Button
+        type="submit"
+        size="lg"
+        loading={pending}
+        disabled={kickedSeconds > 0}
+        className="w-full"
+      >
         {pending ? t.home.joining : t.home.join}
       </Button>
 

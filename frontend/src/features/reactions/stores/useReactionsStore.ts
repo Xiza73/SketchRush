@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { socket } from '@/core/session/lib/socket';
 import { useSessionStore } from '@/core/session/stores/useSessionStore';
 import { ROOM_LIMITS, type Emote } from '@/shared/contract';
+import { playSound } from '@/shared/lib/sound';
 
 export interface LiveReaction {
   id: number;
@@ -46,6 +47,7 @@ export const useReactionsStore = create<ReactionsState & ReactionsActions>((set)
     bound = true;
 
     socket.on('reaction:show', ({ playerId, emote }) => {
+      playSound('sticker');
       const id = nextId++;
       set((state) => ({ live: [...state.live, { id, playerId, emote }].slice(-MAX_LIVE) }));
       window.setTimeout(() => {

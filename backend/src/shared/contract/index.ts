@@ -9,7 +9,7 @@
  * the single place they are encoded.
  */
 
-export const CONTRACT_VERSION = 1;
+export const CONTRACT_VERSION = 2;
 
 export type Language = 'es' | 'en';
 
@@ -130,6 +130,8 @@ export const BRUSH_SIZES: readonly number[] = [4, 10, 20, 36];
 export const ROOM_LIMITS = {
   minPlayers: 2,
   maxPlayers: 10,
+  /** docs/context/02-game-rules.md -> a kicked name may come back after this. */
+  kickRejoinSeconds: 30,
   drawSecondsOptions: [40, 60, 80, 100] as const,
   minDrawSeconds: 40,
   maxDrawSeconds: 100,
@@ -370,11 +372,19 @@ export type ErrorCode =
   | 'not_in_room'
   | 'already_in_room'
   | 'session_expired'
+  /** Joining under a name the host kicked less than `kickRejoinSeconds` ago. */
+  | 'kicked'
   | 'internal';
 
 export interface ErrorPayload {
   code: ErrorCode;
   message: string;
+  /**
+   * Seconds left of the wait this refusal is about. Today that is only
+   * `kicked`, so the join view can count the rejoin block down instead of
+   * repeating a fixed number on every press.
+   */
+  retryAfterSeconds?: number;
 }
 
 export type Ack<T> = ({ ok: true } & T) | ({ ok: false } & ErrorPayload);
@@ -506,6 +516,8 @@ export interface ClientToServerEvents {
   'room:join': (payload: JoinRoomPayload, ack: (r: Ack<SessionAck>) => void) => void;
   'room:rejoin': (payload: RejoinPayload, ack: (r: Ack<SessionAck>) => void) => void;
   'room:leave': (ack?: (r: EmptyAck) => void) => void;
+  /** Host only: throws a player out; their name is blocked for 30 s. */
+  'room:kick': (payload: KickPayload, ack?: (r: EmptyAck) => void) => void;
   'room:ready': (payload: { ready: boolean }, ack?: (r: EmptyAck) => void) => void;
   'room:start': (ack?: (r: EmptyAck) => void) => void;
   /** Host-only, finished-game only: reset the room to a fresh lobby and play again. */
@@ -573,6 +585,18 @@ export interface HintPayload {
   masked: (string | null)[];
 }
 
+/** Host only: who to throw out of the room. */
+export interface KickPayload {
+  playerId: string;
+}
+
+/** Delivered to the kicked socket right before it loses its seat. */
+export interface KickedPayload {
+  roomCode: string;
+  /** How long this name has to wait before that room takes it back. */
+  rejoinAfterSeconds: number;
+}
+
 /** A player gave up their seat for good (`room:leave`), not a disconnection. */
 export interface PlayerLeftPayload {
   playerId: string;
@@ -609,6 +633,8 @@ export interface ServerToClientEvents {
   /** Drawer only, `box` rooms only. */
   'guess:attempt': (payload: GuessAttemptPayload) => void;
   'player:left': (payload: PlayerLeftPayload) => void;
+  /** Addressed to the kicked player alone, just before their seat is freed. */
+  'room:kicked': (payload: KickedPayload) => void;
   'game:end': (payload: GameEndPayload) => void;
   'reaction:show': (payload: { playerId: string; emote: Emote }) => void;
   'session:replaced': (payload: SessionReplacedPayload) => void;

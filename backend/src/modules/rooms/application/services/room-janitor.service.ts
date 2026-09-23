@@ -1,7 +1,5 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { CLOCK, type Clock } from '@shared/domain/clock';
-import { RoomEventsBus } from '@shared/events/room-events.bus';
-import { Room } from '../../domain/entities/room.entity';
 import {
   IRoomRepository,
   ROOM_REPOSITORY,
@@ -9,8 +7,12 @@ import {
 import { ROOM_LIFECYCLE } from '../../domain/room-lifecycle';
 
 /**
- * Periodic cleanup of stale players and rooms. Pure housekeeping, no rules;
- * the delays live in `ROOM_LIFECYCLE`.
+ * Periodic cleanup of rooms nobody is in. Pure housekeeping, no rules; the
+ * delays live in `ROOM_LIFECYCLE`.
+ *
+ * It never removes a player. Being disconnected is not leaving (decided
+ * 2026-09-22): the seat is held for as long as the room lives, so somebody who
+ * switched apps or walked into a lift finds their place where they left it.
  */
 @Injectable()
 export class RoomJanitorService implements OnModuleInit, OnModuleDestroy {
@@ -20,7 +22,6 @@ export class RoomJanitorService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(ROOM_REPOSITORY) private readonly rooms: IRoomRepository,
     @Inject(CLOCK) private readonly clock: Clock,
-    private readonly bus: RoomEventsBus,
   ) {}
 
   onModuleInit(): void {
@@ -43,8 +44,6 @@ export class RoomJanitorService implements OnModuleInit, OnModuleDestroy {
 
   sweep(now: number): void {
     for (const room of this.rooms.all()) {
-      if (room.status === 'lobby') this.removeStaleLobbyPlayers(room, now);
-
       const finishedTooLong =
         room.status === 'finished' &&
         room.finishedAt !== null &&
@@ -60,28 +59,5 @@ export class RoomJanitorService implements OnModuleInit, OnModuleDestroy {
         );
       }
     }
-  }
-
-  /**
-   * A player who stays disconnected in the lobby loses their slot. If that
-   * empties the room, the abandonment clock keeps running from the moment
-   * they dropped, so the empty room is deleted on the same schedule.
-   */
-  private removeStaleLobbyPlayers(room: Room, now: number): void {
-    const stale = room.players.filter(
-      (p) =>
-        !p.connected &&
-        p.disconnectedAt !== null &&
-        now - p.disconnectedAt > ROOM_LIFECYCLE.lobbyDisconnectGraceMs,
-    );
-    if (stale.length === 0) return;
-
-    const lastDropAt = Math.max(...stale.map((p) => p.disconnectedAt ?? now));
-    for (const p of stale) room.removePlayer(p.id);
-    if (room.isEmpty()) {
-      room.emptiedAt = lastDropAt;
-      return;
-    }
-    this.bus.publish({ roomCode: room.code, event: 'lobby:update', payload: room.toLobbyState() });
   }
 }

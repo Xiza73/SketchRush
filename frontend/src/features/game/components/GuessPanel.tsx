@@ -5,6 +5,7 @@ import { ArrowRightIcon, CheckIcon } from '@/shared/components/icons/GameIcons';
 import { Input } from '@/shared/components/ui/Input';
 import { useT } from '@/shared/i18n';
 import { cn } from '@/shared/lib/cn';
+import { playSound } from '@/shared/lib/sound';
 
 import type { FeedEntry } from '../models/turn.model';
 
@@ -215,6 +216,9 @@ export const GuessPanel = ({
               placeholder={mode === 'chat' ? t.game.guessOrChat : t.game.yourGuess}
               invalid={verdict === 'wrong'}
               onChange={(event) => {
+                // Only on the way up: backspacing a long wrong guess should not
+                // rattle. Off unless the player turned typing sounds on.
+                if (event.target.value.length > text.length) playSound('keyTap');
                 setText(event.target.value);
                 if (verdict) setVerdict(null);
               }}

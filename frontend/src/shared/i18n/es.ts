@@ -19,6 +19,12 @@ export const es = {
     themeLight: 'Cambiar a modo claro',
     themeDark: 'Cambiar a modo oscuro',
     copyLink: 'Copiar enlace',
+    soundOn: 'Activar sonido',
+    soundOff: 'Silenciar el juego',
+    soundSettings: 'Sonido',
+    sound: 'Sonido del juego',
+    volume: 'Volumen',
+    keyboardSounds: 'Sonido al teclear',
     copied: 'Enlace copiado',
     copyFailed: 'No se pudo copiar',
     leaveRoom: 'Salir de la sala',
@@ -68,7 +74,8 @@ export const es = {
     hints: 'Pistas',
     hintsOn: 'con pistas',
     hintsOff: 'sin pistas',
-    hintsNote: 'Van saliendo letras según avanza el turno. Cuántas depende de lo larga que sea la palabra, y salen antes cuanta más gente ya la tenga.',
+    hintsNote:
+      'Van saliendo letras según avanza el turno. Cuántas depende de lo larga que sea la palabra, y salen antes cuanta más gente ya la tenga.',
     sessionLength: (minutes: number) =>
       `Una partida así dura unos ${minutes} minutos con la sala llena.`,
     create: 'Crear sala',
@@ -79,6 +86,9 @@ export const es = {
     joining: 'Entrando…',
     nameRequired: 'Escribe tu nombre para continuar.',
     codeRequired: 'Escribe el código de la sala.',
+    /** The kick block, counted down live on the join view. */
+    kickedWait: (n: number) =>
+      `El anfitrión te expulsó de la sala. Podrás volver en ${n} ${n === 1 ? 'segundo' : 'segundos'}.`,
     inviteTitle: 'Te invitaron a jugar',
     inviteSubtitle: 'Escribe tu nombre y entra. Sin cuenta y sin descargas.',
     inviteCodeLabel: 'Código de sala',
@@ -95,6 +105,8 @@ export const es = {
     roomCode: 'Código de sala',
     title: 'Sala de espera',
     freeSlot: 'Hueco libre',
+    kick: 'Expulsar de la sala',
+    kicked: (name: string) => `${name} fue expulsado de la sala`,
     ready: 'Listo',
     waiting: 'Esperando',
     imReady: 'Estoy listo',
@@ -218,8 +230,7 @@ export const es = {
       `Ronda ${round} de ${totalRounds} · turno ${turnInRound} de ${turnsPerRound}`,
     gameOver: 'Fin de la partida',
     nextRoundIn: 'Siguiente turno en',
-    guessedCount: (guessed: number, guessers: number) =>
-      `${guessed} de ${guessers} la adivinaron`,
+    guessedCount: (guessed: number, guessers: number) => `${guessed} de ${guessers} la adivinaron`,
     nobodySolved: 'Nadie la adivinó',
     firstWas: (name: string, pct: number) => `${name} llegó primero con el ${pct} % del tiempo.`,
     missedCount: (n: number) =>
@@ -233,10 +244,8 @@ export const es = {
       played === total ? `tras ${total} rondas` : `tras ${played} de ${total} rondas`,
     finalTable: 'Tabla final',
     tiebreak: 'Desempate: más turnos acertados, luego menos segundos pensando.',
-    decidedByTurns: (total: number) =>
-      `Empate a ${total}: gana quien acertó más turnos.`,
-    decidedBySeconds: (total: number) =>
-      `Empate a ${total}: gana quien tardó menos en acertar.`,
+    decidedByTurns: (total: number) => `Empate a ${total}: gana quien acertó más turnos.`,
+    decidedBySeconds: (total: number) => `Empate a ${total}: gana quien tardó menos en acertar.`,
     turnsGuessed: (n: number) => (n === 1 ? '1 turno acertado' : `${n} turnos acertados`),
     secondsThinking: (n: number) => `${n} s pensando`,
     winner: (name: string) => `${name} gana la partida`,
@@ -262,6 +271,7 @@ export const es = {
     not_in_room: 'No estás en ninguna sala.',
     already_in_room: 'Ya estás en otra partida. Abandónala antes de entrar en esta.',
     session_expired: 'Tu sesión caducó. Vuelve a entrar.',
+    kicked: 'El anfitrión te expulsó de la sala. Podrás volver en 30 segundos.',
     internal: 'Algo salió mal. Inténtalo de nuevo.',
     timeout: 'El servidor no responde.',
     disconnected: 'Sin conexión con el servidor.',

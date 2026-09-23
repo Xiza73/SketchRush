@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROOM_LIMITS } from '@/shared/contract';
 import { useT } from '@/shared/i18n';
 import { lobbyPath } from '@/shared/routes/paths';
+import { kickCooldown, useKickCooldown } from '@/shared/stores/useKickCooldown';
 import { toast } from '@/shared/stores/useToastStore';
 import { useUiStore } from '@/shared/stores/useUiStore';
 
@@ -25,6 +26,8 @@ export const InviteContainer = ({ code, onCreateOwn }: InviteContainerProps) => 
   const [name, setName] = useState(rememberedName);
   const [nameError, setNameError] = useState<string | null>(null);
   const { joinRoom, pending } = useJoinRoom();
+  // The host threw this name out a moment ago: one notice, counting down.
+  const kickedSeconds = useKickCooldown(code, name);
 
   const handleJoin = async () => {
     const trimmed = name.trim();
@@ -35,8 +38,21 @@ export const InviteContainer = ({ code, onCreateOwn }: InviteContainerProps) => 
     setNameError(null);
     rememberName(trimmed);
     const result = await joinRoom(code, trimmed);
-    if (result.ok) navigate(lobbyPath(result.value.roomCode));
-    else toast.error(result.error.message === 'timeout' ? 'timeout' : result.error.code);
+    if (result.ok) {
+      navigate(lobbyPath(result.value.roomCode));
+      return;
+    }
+    // A kick is not a toast: the notice below the field holds the real
+    // remaining time the server just sent and counts it down.
+    if (result.error.code === 'kicked') {
+      kickCooldown.start(
+        code,
+        trimmed,
+        result.error.retryAfterSeconds ?? ROOM_LIMITS.kickRejoinSeconds,
+      );
+      return;
+    }
+    toast.error(result.error.message === 'timeout' ? 'timeout' : result.error.code);
   };
 
   return (
@@ -46,6 +62,7 @@ export const InviteContainer = ({ code, onCreateOwn }: InviteContainerProps) => 
       name={name}
       nameError={nameError}
       pending={pending}
+      kickedSeconds={kickedSeconds}
       onNameChange={(next) => {
         setName(next);
         if (nameError) setNameError(null);

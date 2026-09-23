@@ -27,6 +27,11 @@ export class JoinRoomUseCase {
     if (room.hasName(dto.name)) throw new DomainException('name_taken');
 
     const now = this.clock.now();
+    // The refusal carries what is left of the block, so the join view counts it
+    // down instead of repeating a fixed 30 s on every retry.
+    const blockedFor = room.nameBlockSecondsLeft(dto.name, now);
+    if (blockedFor > 0) throw new DomainException('kicked', undefined, blockedFor);
+
     const player = Player.create({
       id: randomUUID(),
       token: newPlayerToken(),

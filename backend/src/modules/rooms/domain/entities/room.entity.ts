@@ -21,6 +21,8 @@ export class Room {
   finishedAt: number | null = null;
   /** Epoch ms at which the last player was removed; only set on an empty room. */
   emptiedAt: number | null = null;
+  /** Kicked name (trimmed, lower-cased) -> epoch ms it may come back at. */
+  private readonly blockedNames = new Map<string, number>();
 
   private constructor(
     readonly code: string,
@@ -81,6 +83,29 @@ export class Room {
 
   touch(now: number): void {
     this.lastActivityAt = now;
+  }
+
+  // -------------------------------------------------------------- kicks
+
+  blockName(name: string, until: number): void {
+    this.blockedNames.set(name.trim().toLowerCase(), until);
+  }
+
+  /**
+   * Seconds this name still has to wait before it may come back, 0 when it may
+   * join now. Rounded up, so the last fraction of a second is still a "1" and
+   * never a "0 seconds" that refuses anyway; the expired entry is dropped on
+   * the way out.
+   */
+  nameBlockSecondsLeft(name: string, now: number): number {
+    const key = name.trim().toLowerCase();
+    const until = this.blockedNames.get(key);
+    if (until === undefined) return 0;
+    if (now >= until) {
+      this.blockedNames.delete(key);
+      return 0;
+    }
+    return Math.ceil((until - now) / 1000);
   }
 
   /**

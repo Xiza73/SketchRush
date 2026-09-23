@@ -26,6 +26,7 @@ import { ReactionDto } from '@modules/reactions/application/dtos/reaction.dto';
 import { SendReactionUseCase } from '@modules/reactions/application/use-cases/send-reaction.use-case';
 import { CreateRoomDto } from '@modules/rooms/application/dtos/create-room.dto';
 import { JoinRoomDto } from '@modules/rooms/application/dtos/join-room.dto';
+import { KickDto } from '@modules/rooms/application/dtos/kick.dto';
 import { RejoinRoomDto } from '@modules/rooms/application/dtos/rejoin-room.dto';
 import { SetReadyDto } from '@modules/rooms/application/dtos/set-ready.dto';
 import { UpdateRoomSettingsDto } from '@modules/rooms/application/dtos/update-room-settings.dto';
@@ -35,10 +36,12 @@ import {
 } from '@modules/rooms/application/use-cases/create-room.use-case';
 import { EnsureNotInRoomUseCase } from '@modules/rooms/application/use-cases/ensure-not-in-room.use-case';
 import { JoinRoomUseCase } from '@modules/rooms/application/use-cases/join-room.use-case';
+import { KickPlayerUseCase } from '@modules/rooms/application/use-cases/kick-player.use-case';
 import { LeaveRoomUseCase } from '@modules/rooms/application/use-cases/leave-room.use-case';
 import { MarkDisconnectedUseCase } from '@modules/rooms/application/use-cases/mark-disconnected.use-case';
 import { RejoinRoomUseCase } from '@modules/rooms/application/use-cases/rejoin-room.use-case';
 import { RestartRoomUseCase } from '@modules/rooms/application/use-cases/restart-room.use-case';
+import { ResumeSessionUseCase } from '@modules/rooms/application/use-cases/resume-session.use-case';
 import { SetReadyUseCase } from '@modules/rooms/application/use-cases/set-ready.use-case';
 import { StartGameUseCase } from '@modules/rooms/application/use-cases/start-game.use-case';
 import { UpdateRoomSettingsUseCase } from '@modules/rooms/application/use-cases/update-room-settings.use-case';
@@ -86,7 +89,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     private readonly ensureNotInRoom: EnsureNotInRoomUseCase,
     private readonly createRoom: CreateRoomUseCase,
     private readonly joinRoom: JoinRoomUseCase,
+    private readonly kickPlayer: KickPlayerUseCase,
     private readonly rejoinRoom: RejoinRoomUseCase,
+    private readonly resumeSession: ResumeSessionUseCase,
     private readonly setReady: SetReadyUseCase,
     private readonly updateRoomSettings: UpdateRoomSettingsUseCase,
     private readonly restartRoom: RestartRoomUseCase,
@@ -117,8 +122,38 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       this.lastReason.set(client.id, reason);
     });
     this.logger.log(
-      `socket open ${client.id} transport=${client.conn.transport.name} ip=${client.handshake.address}`,
+      `socket open ${client.id} transport=${client.conn.transport.name} ip=${client.handshake.address}` +
+        (client.recovered ? ' recovered=yes' : ''),
     );
+    // Socket.IO recovered the connection: this is the same socket, back from a
+    // blink of the network, with its channels and its missed events already
+    // restored. It must never take the "new socket" path, which would count it
+    // as a second person and leave the first one marked away.
+    if (client.recovered) this.resumeSeat(client);
+  }
+
+  /** Gives a recovered socket its seat back, or strips what recovery restored. */
+  private resumeSeat(client: GameSocket): void {
+    const seat = client.data.lastSeat;
+    client.data.lastSeat = undefined;
+    client.data.roomCode = undefined;
+    client.data.playerId = undefined;
+    if (!seat) return;
+
+    // Another tab took the seat while this socket was away: it keeps it.
+    if (this.sessions.socketOf(seat.playerId)) {
+      void client.leave(roomChannel(seat.roomCode));
+      client.emit('session:replaced', { roomCode: seat.roomCode });
+      return;
+    }
+    // The room or the seat is gone (left, room deleted). Recovery restored the
+    // channel, so it has to be given up by hand.
+    if (!this.resumeSession.execute(seat.roomCode, seat.playerId)) {
+      void client.leave(roomChannel(seat.roomCode));
+      return;
+    }
+    this.sessions.bind(client, seat.roomCode, seat.playerId);
+    this.logger.log(`socket ${client.id} recovered seat ${seat.playerId} in ${seat.roomCode}`);
   }
 
   handleDisconnect(client: GameSocket): void {
@@ -144,6 +179,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       `socket close ${client.id} reason=${reason} lived=${lived} ` +
         `room=${session.roomCode} player=${session.playerId}`,
     );
+    // Socket.IO persisted `client.data` a moment ago — the very object `detach`
+    // just emptied — so the seat has to be written back under its own key for
+    // the recovered socket to find it.
+    client.data.lastSeat = session;
     this.markDisconnected.execute(session.roomCode, session.playerId);
   }
 
@@ -213,6 +252,20 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage('room:leave')
   onLeave(@ConnectedSocket() client: GameSocket): EmptyAck {
     this.leaveCurrentRoom(client);
+    return OK_EMPTY;
+  }
+
+  @SubscribeMessage('room:kick')
+  onKick(@ConnectedSocket() client: GameSocket, @MessageBody() dto: KickDto): EmptyAck {
+    const { roomCode, playerId } = this.requireSession(client);
+    const targetId = this.kickPlayer.execute(roomCode, playerId, dto.playerId);
+    // Told already; from here on the victim hears nothing more from this room.
+    const victim = this.sessions.socketOf(targetId);
+    if (victim) this.sessions.detach(victim);
+    this.leaveRoom.execute(roomCode, targetId);
+    // After the room has dropped them, never before: whether the turn survives
+    // depends on who is still seated. Kicking the drawer ends the turn.
+    this.handlePlayerLeft.execute(roomCode, targetId);
     return OK_EMPTY;
   }
 

@@ -2,11 +2,15 @@ import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import type { Dictionary } from '@/shared/i18n';
 
+import { KickedNotice } from './KickedNotice';
+
 interface JoinRoomFormProps {
   t: Dictionary;
   code: string;
   codeError: string | null;
   pending: boolean;
+  /** Seconds left of a kick block on this name and code; 0 when there is none. */
+  kickedSeconds: number;
   onCodeChange: (code: string) => void;
   onSubmit: () => void;
 }
@@ -16,6 +20,7 @@ export const JoinRoomForm = ({
   code,
   codeError,
   pending,
+  kickedSeconds,
   onCodeChange,
   onSubmit,
 }: JoinRoomFormProps) => (
@@ -43,7 +48,13 @@ export const JoinRoomForm = ({
         onChange={(event) => onCodeChange(event.target.value.toUpperCase())}
         className="min-w-0 flex-1"
       />
-      <Button type="submit" variant="outline" loading={pending} className="shrink-0">
+      <Button
+        type="submit"
+        variant="outline"
+        loading={pending}
+        disabled={kickedSeconds > 0}
+        className="shrink-0"
+      >
         {pending ? t.home.joining : t.home.join}
       </Button>
     </div>
@@ -52,5 +63,6 @@ export const JoinRoomForm = ({
         {codeError}
       </p>
     ) : null}
+    {kickedSeconds > 0 ? <KickedNotice message={t.home.kickedWait(kickedSeconds)} /> : null}
   </form>
 );

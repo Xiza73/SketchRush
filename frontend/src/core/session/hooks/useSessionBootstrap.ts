@@ -23,6 +23,10 @@ export const useSessionBootstrap = () => {
     if (started.current) return;
     started.current = true;
     const atHome = pathname === PATHS.home;
+    // Every room route carries the code, so a session that cannot be restored
+    // has somewhere to land: the join view for that code. Nothing is said out
+    // loud in that case — the expiry notice belongs to a plain visit home.
+    const urlCode = /^\/(?:room|game|results)\/([^/]+)/.exec(pathname)?.[1]?.toUpperCase() ?? null;
 
     const store = useSessionStore.getState();
     store.bind();
@@ -34,8 +38,11 @@ export const useSessionBootstrap = () => {
 
     // `initial` marks the re-entry rejoin: a finished room expires the session
     // instead of restoring it.
-    void store.rejoin({ initial: true, quiet: atHome }).then((state) => {
-      if (state && !atHome) {
+    void store.rejoin({ initial: true, quiet: atHome || urlCode !== null }).then((state) => {
+      // A room URL for *another* room is an invitation, not a place to be sent
+      // away from: the guard shows the "one game at a time" card there.
+      const elsewhere = urlCode !== null && state !== null && urlCode !== state.lobby.code;
+      if (state && !atHome && !elsewhere) {
         navigate(pathForStatus(state.lobby.status, state.lobby.code), { replace: true });
       }
       useSessionStore.getState().markBootstrapped();

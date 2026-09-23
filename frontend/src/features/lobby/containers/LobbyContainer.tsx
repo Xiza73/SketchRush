@@ -5,10 +5,12 @@ import { useSessionStore } from '@/core/session/stores/useSessionStore';
 import { PageLoading } from '@/shared/components/ui/PageState';
 import { ROOM_LIMITS, type RoomSettings } from '@/shared/contract';
 import { useT } from '@/shared/i18n';
-import { homeWithCode, PATHS, pathForStatus } from '@/shared/routes/paths';
+import { inviteLinkFor, PATHS, pathForStatus } from '@/shared/routes/paths';
 import { toast } from '@/shared/stores/useToastStore';
+import { playSound } from '@/shared/lib/sound';
 
 import { useLeaveRoom } from '../api/leave-room/useLeaveRoom';
+import { useKickPlayer } from '../api/kick-player/useKickPlayer';
 import { useSetReady } from '../api/set-ready/useSetReady';
 import { useStartGame } from '../api/start-game/useStartGame';
 import { useUpdateSettings } from '../api/update-settings/useUpdateSettings';
@@ -25,6 +27,7 @@ export const LobbyContainer = () => {
   const lobby = useLobbyStore((state) => state.lobby);
   const session = useSessionStore((state) => state.session);
   const { setReady } = useSetReady();
+  const { kick, pending: kicking } = useKickPlayer();
   const { startGame, pending: starting } = useStartGame();
   const { leaveRoom } = useLeaveRoom();
   const { updateSettings, pending: saving } = useUpdateSettings();
@@ -40,13 +43,20 @@ export const LobbyContainer = () => {
   if (!lobby || !session) return <PageLoading title={t.common.loading} />;
 
   const copyLink = async () => {
-    const link = `${window.location.origin}${homeWithCode(lobby.code)}`;
+    const link = inviteLinkFor(lobby.code);
     try {
       await navigator.clipboard.writeText(link);
       toast.success(t.common.copied);
     } catch {
       toast.errorText(t.common.copyFailed);
     }
+  };
+
+  const handleKick = async (playerId: string) => {
+    const name = lobby.players.find((p) => p.id === playerId)?.name ?? '';
+    const result = await kick(playerId);
+    if (result.ok) toast.info(t.lobby.kicked(name));
+    else toast.error(result.error.message === 'timeout' ? 'timeout' : result.error.code);
   };
 
   const toggleReady = async () => {
@@ -67,6 +77,7 @@ export const LobbyContainer = () => {
     }
     // The chips redraw from the server's `lobby:update`, never from these values.
     setRulesOpen(false);
+    playSound('settingsSaved');
     toast.success(t.lobby.rulesSaved);
   };
 
@@ -87,7 +98,13 @@ export const LobbyContainer = () => {
           onCopyLink={() => void copyLink()}
           onChangeRules={() => setRulesOpen(true)}
         />
-        <PlayerSlots t={t} players={lobby.players} capacity={lobby.settings.capacity} />
+        <PlayerSlots
+          t={t}
+          players={lobby.players}
+          capacity={lobby.settings.capacity}
+          onKick={lobby.isHost ? (playerId) => void handleKick(playerId) : undefined}
+          kickPending={kicking}
+        />
         <LobbyActions
           t={t}
           isHost={lobby.isHost}

@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { ROOM_LIMITS } from '@/shared/contract';
 import { useT } from '@/shared/i18n';
 import { lobbyPath } from '@/shared/routes/paths';
+import { kickCooldown, useKickCooldown } from '@/shared/stores/useKickCooldown';
 import { toast } from '@/shared/stores/useToastStore';
 import { useUiStore } from '@/shared/stores/useUiStore';
+import { playSound } from '@/shared/lib/sound';
 
 import type { CreateRoomForm as CreateRoomFormValues } from '../api/create-room/create-room.dto';
 import { useCreateRoom } from '../api/create-room/useCreateRoom';
@@ -27,7 +29,6 @@ const defaultValues = (name: string, uiLang: 'es' | 'en'): CreateRoomFormValues 
 export const HomeContainer = () => {
   const t = useT();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const rememberedName = useUiStore((state) => state.rememberedName);
   const rememberName = useUiStore((state) => state.rememberName);
   const uiLang = useUiStore((state) => state.lang);
@@ -35,17 +36,17 @@ export const HomeContainer = () => {
   const [values, setValues] = useState<CreateRoomFormValues>(() =>
     defaultValues(rememberedName, uiLang),
   );
-  const [code, setCode] = useState(() => (searchParams.get('code') ?? '').toUpperCase());
+  // Typed by hand: an invitation link no longer lands here, it goes to
+  // `/room/CODE` and the guard shows the join view there.
+  const [code, setCode] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
 
   const { createRoom, pending: creating } = useCreateRoom();
   const { joinRoom, pending: joining } = useJoinRoom();
-
-  useEffect(() => {
-    const fromUrl = searchParams.get('code');
-    if (fromUrl) setCode(fromUrl.toUpperCase());
-  }, [searchParams]);
+  // The block follows the name typed in the create form, which the join
+  // form shares: both actions send the same name.
+  const kickedSeconds = useKickCooldown(code, values.name);
 
   const validName = () => {
     const name = values.name.trim();
@@ -61,8 +62,12 @@ export const HomeContainer = () => {
   const handleCreate = async () => {
     if (!validName()) return;
     const result = await createRoom(values);
-    if (result.ok) navigate(lobbyPath(result.value.roomCode));
-    else toast.error(result.error.message === 'timeout' ? 'timeout' : result.error.code);
+    if (result.ok) {
+      playSound('roomCreated');
+      navigate(lobbyPath(result.value.roomCode));
+      return;
+    }
+    toast.error(result.error.message === 'timeout' ? 'timeout' : result.error.code);
   };
 
   const handleJoin = async () => {
@@ -74,8 +79,21 @@ export const HomeContainer = () => {
     }
     setCodeError(null);
     const result = await joinRoom(code, name);
-    if (result.ok) navigate(lobbyPath(result.value.roomCode));
-    else toast.error(result.error.message === 'timeout' ? 'timeout' : result.error.code);
+    if (result.ok) {
+      navigate(lobbyPath(result.value.roomCode));
+      return;
+    }
+    // A kick is not a toast: the notice under the field counts the real
+    // remaining time down and holds the button while it runs.
+    if (result.error.code === 'kicked') {
+      kickCooldown.start(
+        code,
+        name,
+        result.error.retryAfterSeconds ?? ROOM_LIMITS.kickRejoinSeconds,
+      );
+      return;
+    }
+    toast.error(result.error.message === 'timeout' ? 'timeout' : result.error.code);
   };
 
   return (
@@ -85,7 +103,13 @@ export const HomeContainer = () => {
         values={values}
         nameError={nameError}
         pending={creating}
-        onChange={(patch) => setValues((current) => ({ ...current, ...patch }))}
+        onChange={(patch) => {
+          // Choosing a rule is room furniture: it answers to mute and volume
+          // but never to the keyboard toggle. Typing the name goes through this
+          // same handler and must stay silent, or every keystroke would click.
+          if (!('name' in patch)) playSound('optionSelect');
+          setValues((current) => ({ ...current, ...patch }));
+        }}
         onSubmit={() => void handleCreate()}
       />
       <JoinRoomForm
@@ -93,6 +117,7 @@ export const HomeContainer = () => {
         code={code}
         codeError={codeError}
         pending={joining}
+        kickedSeconds={kickedSeconds}
         onCodeChange={(next) => {
           setCode(next);
           if (codeError) setCodeError(null);

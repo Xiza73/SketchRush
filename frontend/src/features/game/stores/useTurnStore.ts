@@ -3,8 +3,14 @@ import { create } from 'zustand';
 import { socket } from '@/core/session/lib/socket';
 import { useSessionStore } from '@/core/session/stores/useSessionStore';
 import type { DrawOp, FullState, GuessVerdict, WordChoicesPayload } from '@/shared/contract';
+import { playSound } from '@/shared/lib/sound';
 
-import { appendOp, toTurnViewModel, type FeedEntry, type TurnViewModel } from '../models/turn.model';
+import {
+  appendOp,
+  toTurnViewModel,
+  type FeedEntry,
+  type TurnViewModel,
+} from '../models/turn.model';
 
 interface TurnStoreState {
   turn: TurnViewModel | null;
@@ -97,7 +103,10 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
       if (bound) return;
       bound = true;
 
-      socket.on('turn:start', (dto) =>
+      socket.on('turn:start', (dto) => {
+        // The drawing phase arrives as a second `turn:start` with `startedAt: 0`
+        // spent; only the real one is worth a cue.
+        if (dto.startedAt !== 0) playSound('turnStarted');
         set((state) => ({
           turn: toTurnViewModel(dto),
           ops: dto.canvas,
@@ -106,21 +115,28 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
           choices: dto.startedAt === 0 ? state.choices : null,
           feed: dto.startedAt === 0 ? [] : state.feed,
           iGuessed: false,
-        })),
-      );
+        }));
+      });
 
-      socket.on('turn:choices', (payload) => set({ choices: payload }));
+      socket.on('turn:choices', (payload) => {
+        // The room is waiting on me to pick: the one cue that asks for an action.
+        playSound('yourTurnToDraw');
+        set({ choices: payload });
+      });
 
-      socket.on('turn:hint', ({ masked }) =>
-        set((state) => (state.turn ? { turn: { ...state.turn, masked } } : {})),
-      );
+      socket.on('turn:hint', ({ masked }) => {
+        playSound('hintRevealed');
+        set((state) => (state.turn ? { turn: { ...state.turn, masked } } : {}));
+      });
 
       socket.on('turn:end', ({ word }) => {
+        playSound('turnEnded');
         pushFeed({ kind: 'word', playerId: null, text: word });
         set({ choices: null });
       });
 
       socket.on('player:guessed', ({ playerId, position, points }) => {
+        playSound(playerId === myId() ? 'youGuessed' : 'rivalGuessed');
         pushFeed({ kind: 'guessed', playerId, text: String(position) });
         set((state) => ({
           iGuessed: state.iGuessed || playerId === myId(),
@@ -140,11 +156,14 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
       // Addressed to the drawer and nobody else; the server only sends it in a
       // `box` room, where it is the drawer's one window onto whether the
       // drawing is working at all.
-      socket.on('guess:attempt', ({ playerId, verdict }) =>
-        pushFeed({ kind: 'attempt', playerId, text: '', verdict }),
-      );
+      socket.on('guess:attempt', ({ playerId, verdict }) => {
+        // A verdict is only news to the person who typed it.
+        if (playerId === myId()) playSound(verdict === 'close' ? 'guessClose' : 'guessWrong');
+        pushFeed({ kind: 'attempt', playerId, text: '', verdict });
+      });
 
       socket.on('chat:message', ({ playerId, text }) => {
+        if (playerId !== myId()) playSound('chatMessage');
         // My own message comes back to me too, and I already wrote it down with
         // its verdict the moment I sent it. Keeping both would say it twice.
         if (playerId === myId()) return;
@@ -191,8 +210,7 @@ export const useTurnStore = create<TurnStoreState & TurnActions>((set, get) => {
     // Drawing anything new ends the future undo was holding, here as on the
     // server. The two stacks have to agree or redo puts back a different line
     // on the drawer's screen than on everybody else's.
-    pushLocalOp: (op) =>
-      set((state) => ({ ops: appendOp(state.ops, op), undone: [] })),
+    pushLocalOp: (op) => set((state) => ({ ops: appendOp(state.ops, op), undone: [] })),
 
     undoLocal: () =>
       set((state) => {

@@ -23,18 +23,25 @@ interface ToastActions {
   reset: () => void;
 }
 
-const TOAST_MS = 3200;
 const MAX_VISIBLE = 3;
 let nextId = 1;
 
 export const useToastStore = create<ToastState & ToastActions>((set) => ({
   items: [],
+  /**
+   * Pushes only. How long a toast stays up belongs to the `Toaster`, which is
+   * the only place that knows whether somebody is pointing at it or has tabbed
+   * to its close button; a timer started here could not be held.
+   *
+   * The same notice is never stacked on itself: retrying an action that keeps
+   * failing the same way says it once, not once per press.
+   */
   push: (toast) => {
-    const id = nextId++;
-    set((state) => ({ items: [...state.items, { ...toast, id }].slice(-MAX_VISIBLE) }));
-    window.setTimeout(() => {
-      set((state) => ({ items: state.items.filter((item) => item.id !== id) }));
-    }, TOAST_MS);
+    set((state) =>
+      state.items.some((item) => item.code === toast.code && item.text === toast.text)
+        ? state
+        : { items: [...state.items, { ...toast, id: nextId++ }].slice(-MAX_VISIBLE) },
+    );
   },
   dismiss: (id) => set((state) => ({ items: state.items.filter((item) => item.id !== id) })),
   reset: () => set({ items: [] }),

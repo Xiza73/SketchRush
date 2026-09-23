@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { socket } from '@/core/session/lib/socket';
 import { useSessionStore } from '@/core/session/stores/useSessionStore';
+import { playSound } from '@/shared/lib/sound';
 
 import { toLobbyViewModel, type LobbyViewModel } from '../models/lobby.model';
 
@@ -18,14 +19,22 @@ let bound = false;
 
 const myId = () => useSessionStore.getState().session?.playerId ?? null;
 
-export const useLobbyStore = create<LobbyState & LobbyActions>((set) => ({
+export const useLobbyStore = create<LobbyState & LobbyActions>((set, get) => ({
   lobby: null,
 
   bind: () => {
     if (bound) return;
     bound = true;
 
-    socket.on('lobby:update', (dto) => set({ lobby: toLobbyViewModel(dto, myId()) }));
+    socket.on('lobby:update', (dto) => {
+      // The roster is the only place that knows somebody arrived or left: the
+      // server sends the whole lobby, not a delta, so the delta is taken here.
+      const before = get().lobby?.players.length;
+      if (before !== undefined && dto.players.length !== before) {
+        playSound(dto.players.length > before ? 'playerJoined' : 'playerLeft');
+      }
+      set({ lobby: toLobbyViewModel(dto, myId()) });
+    });
     // The lobby may not receive a lobby:update when the game starts; flip the status locally.
     socket.on('turn:start', () =>
       set((state) => (state.lobby ? { lobby: { ...state.lobby, status: 'drawing' } } : {})),

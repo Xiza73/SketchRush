@@ -5,11 +5,15 @@ import type { Dictionary } from '@/shared/i18n';
 import { cn } from '@/shared/lib/cn';
 
 import type { LobbyPlayerViewModel } from '../models/lobby.model';
+import { KickButton } from './KickButton';
 
 interface PlayerSlotsProps {
   t: Dictionary;
   players: LobbyPlayerViewModel[];
   capacity: number;
+  /** Host only: throws somebody out. Absent for everybody else. */
+  onKick?: (playerId: string) => void;
+  kickPending?: boolean;
 }
 
 const ReadyBadge = ({ label }: { label: string }) => (
@@ -25,7 +29,7 @@ const WaitingBadge = ({ label }: { label: string }) => (
   </span>
 );
 
-export const PlayerSlots = ({ t, players, capacity }: PlayerSlotsProps) => {
+export const PlayerSlots = ({ t, players, capacity, onKick, kickPending }: PlayerSlotsProps) => {
   const emptyCount = Math.max(0, capacity - players.length);
   return (
     <ul className="m-0 grid list-none grid-cols-2 gap-3.5 p-0 md:grid-cols-3 xl:grid-cols-4">
@@ -48,11 +52,21 @@ export const PlayerSlots = ({ t, players, capacity }: PlayerSlotsProps) => {
                 size={48}
                 tone={player.isMe ? 'accent' : toneForName(player.name, index)}
               />
-              {player.ready ? (
-                <ReadyBadge label={t.lobby.ready} />
-              ) : (
-                <WaitingBadge label={player.connected ? t.lobby.waiting : t.lobby.disconnected} />
-              )}
+              <div className="flex items-center gap-2">
+                {player.ready ? (
+                  <ReadyBadge label={t.lobby.ready} />
+                ) : (
+                  <WaitingBadge label={player.connected ? t.lobby.waiting : t.lobby.disconnected} />
+                )}
+                {onKick && !player.isMe ? (
+                  <KickButton
+                    label={t.lobby.kick}
+                    name={player.name}
+                    disabled={kickPending}
+                    onClick={() => onKick(player.id)}
+                  />
+                ) : null}
+              </div>
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="truncate text-[17px] font-bold">{player.name}</span>

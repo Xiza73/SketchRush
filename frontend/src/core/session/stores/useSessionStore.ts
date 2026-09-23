@@ -10,6 +10,7 @@ import {
   type StoredSession,
 } from '@/core/session/models/session.model';
 import type { ErrorPayload, FullState, SessionAck } from '@/shared/contract';
+import { kickCooldown } from '@/shared/stores/useKickCooldown';
 import { toast } from '@/shared/stores/useToastStore';
 
 /**
@@ -153,6 +154,14 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     });
     socket.on('disconnect', () => set({ connection: 'disconnected' }));
     socket.on('session:replaced', () => set({ replaced: true }));
+    // Thrown out by the host: the seat is already gone on the server. Drop the
+    // session and start the block, so the join view counts it down instead of
+    // letting them press a button that can only refuse.
+    socket.on('room:kicked', (payload) => {
+      const name = get().session?.name ?? '';
+      get().clearSession();
+      kickCooldown.start(payload.roomCode, name, payload.rejoinAfterSeconds);
+    });
     socket.on('connect_error', () => set({ connection: 'disconnected' }));
     socket.on('error', (payload) => {
       toast.error(payload.code);

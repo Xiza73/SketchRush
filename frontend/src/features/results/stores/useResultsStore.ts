@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { socket } from '@/core/session/lib/socket';
 import { useSessionStore } from '@/core/session/stores/useSessionStore';
+import { playSound } from '@/shared/lib/sound';
 import type {
   FullState,
   GameEndPayload,
@@ -84,9 +85,14 @@ export const useResultsStore = create<ResultsState & ResultsActions>((set) => {
           roomStatus: payload.nextTurnIn > 0 ? 'between-turns' : 'finished',
         }),
       );
-      socket.on('game:end', (payload) =>
-        set({ gameEnd: payload, nextRoundAt: null, roomStatus: 'finished' }),
-      );
+      socket.on('game:end', (payload) => {
+        // Won or lost is read from the final table, not from the server: the
+        // payload says who came where, and first place is the whole test.
+        const myId = useSessionStore.getState().session?.playerId;
+        const top = payload.standings[0];
+        playSound(top && top.playerId === myId ? 'gameWon' : 'gameLost');
+        set({ gameEnd: payload, nextRoundAt: null, roomStatus: 'finished' });
+      });
       socket.on('turn:start', (round) =>
         set({ latestRoundStarted: round.turn, roomStatus: 'drawing' }),
       );

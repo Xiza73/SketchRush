@@ -4,10 +4,12 @@ import { RoomJanitorService } from './application/services/room-janitor.service'
 import { CreateRoomUseCase } from './application/use-cases/create-room.use-case';
 import { EnsureNotInRoomUseCase } from './application/use-cases/ensure-not-in-room.use-case';
 import { JoinRoomUseCase } from './application/use-cases/join-room.use-case';
+import { KickPlayerUseCase } from './application/use-cases/kick-player.use-case';
 import { LeaveRoomUseCase } from './application/use-cases/leave-room.use-case';
 import { MarkDisconnectedUseCase } from './application/use-cases/mark-disconnected.use-case';
 import { RejoinRoomUseCase } from './application/use-cases/rejoin-room.use-case';
 import { RestartRoomUseCase } from './application/use-cases/restart-room.use-case';
+import { ResumeSessionUseCase } from './application/use-cases/resume-session.use-case';
 import { SetReadyUseCase } from './application/use-cases/set-ready.use-case';
 import { StartGameUseCase } from './application/use-cases/start-game.use-case';
 import { UpdateRoomSettingsUseCase } from './application/use-cases/update-room-settings.use-case';
@@ -21,7 +23,9 @@ import { InMemoryRoomRepository } from './infrastructure/repositories/in-memory-
     RoomJanitorService,
     CreateRoomUseCase,
     JoinRoomUseCase,
+    KickPlayerUseCase,
     RejoinRoomUseCase,
+    ResumeSessionUseCase,
     SetReadyUseCase,
     StartGameUseCase,
     UpdateRoomSettingsUseCase,
@@ -34,7 +38,9 @@ import { InMemoryRoomRepository } from './infrastructure/repositories/in-memory-
     ROOM_REPOSITORY,
     CreateRoomUseCase,
     JoinRoomUseCase,
+    KickPlayerUseCase,
     RejoinRoomUseCase,
+    ResumeSessionUseCase,
     SetReadyUseCase,
     StartGameUseCase,
     UpdateRoomSettingsUseCase,

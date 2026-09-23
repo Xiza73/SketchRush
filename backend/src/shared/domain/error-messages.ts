@@ -18,5 +18,6 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   not_in_room: 'You are not in a room',
   already_in_room: 'You are already in another room; leave it first',
   session_expired: 'Your session has expired',
+  kicked: 'The host removed you from this room; try again in a moment',
   internal: 'Unexpected server error',
 };

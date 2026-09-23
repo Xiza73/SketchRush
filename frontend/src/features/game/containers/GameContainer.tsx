@@ -14,6 +14,7 @@ import { useT } from '@/shared/i18n';
 import { cn } from '@/shared/lib/cn';
 import { resultsPath } from '@/shared/routes/paths';
 import { toast } from '@/shared/stores/useToastStore';
+import { playSound } from '@/shared/lib/sound';
 
 import { useChooseWord } from '../api/choose-word/useChooseWord';
 import { useDraw } from '../api/draw/useDraw';
@@ -90,6 +91,14 @@ export const GameContainer = ({ roomCode }: GameContainerProps) => {
   useDrawShortcuts({ enabled: iAmDrawer && drawing, onUndo: sendUndo, onRedo: sendRedo });
 
   const secondsLeft = turn && turn.deadlineAt > 0 ? Math.max(0, (turn.deadlineAt - now) / 1000) : 0;
+
+  // The last five seconds, once each. `useNow` ticks far faster than a second,
+  // so the whole number is the guard: the cue fires when it changes, not when
+  // the clock does.
+  const warnAt = secondsLeft > 0 && secondsLeft <= 5 ? Math.ceil(secondsLeft) : 0;
+  useEffect(() => {
+    if (warnAt > 0) playSound('timeWarning');
+  }, [warnAt]);
   const chooseSecondsLeft = choices ? Math.max(0, (choices.deadline - now) / 1000) : 0;
 
   const nameOf = useMemo(() => {
