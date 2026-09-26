@@ -38,9 +38,18 @@ vi.mock('@/shared/stores/useToastStore', () => ({ toast: { error: vi.fn() } }));
 
 const SESSION = { roomCode: 'ABCD', playerId: 'ana', token: 'tok', name: 'Ana' };
 
+/**
+ * A real `SessionAck`. It has to be: the retry path calls `rejoin()` through a
+ * bare `void`, so anything `applyAck` throws on the way in never reaches an
+ * assertion — it surfaces as an unhandled rejection that fails the run while
+ * every test still reports green. `state.lobby.players` is the field that did
+ * it, and `toStoredSession` reads the seat out of it to recover the name.
+ */
 const snapshot = () => ({
-  session: SESSION,
-  state: { lobby: { status: 'lobby' } },
+  roomCode: SESSION.roomCode,
+  playerId: SESSION.playerId,
+  token: SESSION.token,
+  state: { lobby: { status: 'lobby', players: [{ id: SESSION.playerId, name: SESSION.name }] } },
 });
 
 /**
